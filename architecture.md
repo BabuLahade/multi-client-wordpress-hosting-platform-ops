@@ -1,5 +1,5 @@
 ## ARCHITECTURE 
-      - system overview
+      * system overview
       - network layout
       - services used
       - client onboarding flow
