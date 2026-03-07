@@ -148,3 +148,14 @@ WordPress2 --> RDS2
 
 Prometheus --> Grafana
 ```
+
+```mermaid
+sequenceDiagram
+
+User->>Nginx: HTTP Request
+Nginx->>WordPress: Route to container
+WordPress->>MySQL: Fetch data
+MySQL-->>WordPress: Return data
+WordPress-->>Nginx: HTML response
+Nginx-->>User: Website page
+```
