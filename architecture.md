@@ -1,10 +1,10 @@
 ## ARCHITECTURE 
-      * system overview
+      - system overview
       - network layout
       - services used
       - client onboarding flow
       - failure handling strategy
-
+---
  ## System 
  ```
 System :
@@ -25,3 +25,4 @@ System :
       |
    s3 storage   
    ```
+   ---
