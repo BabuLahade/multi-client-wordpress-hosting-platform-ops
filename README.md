@@ -1,121 +1,149 @@
-## project
-``` bash 
-wordpress-platform/
-├── infrastructure          # Terraform / AWS resources
-├── provisioning-service    # API that creates new WordPress sites
-├── nginx-gateway           # Reverse proxy + domain routing
-├── wordpress-template      # Base WordPress Docker image
-├── monitoring              # Prometheus / Grafana configs
-└── docs                    # Architecture and setup guides
+# Multi-Client WordPress Hosting Platform
 
+A DevOps platform that automatically provisions and manages multiple isolated WordPress websites for different clients using AWS infrastructure and containerized services.
+
+The system demonstrates real-world platform engineering concepts:
+
+- multi-tenant hosting
+- automated provisioning
+- infrastructure as code
+- reverse proxy routing
+- monitoring and failure handling
+
+---
+
+## Architecture Overview
+
+```mermaid
+flowchart TD
+
+User[Client Browser]
+
+DNS[Route53]
+Gateway[Nginx Gateway]
+
+WP1[WordPress Container Client1]
+WP2[WordPress Container Client2]
+
+DB[(MySQL Database)]
+S3[(S3 Media Storage)]
+
+User --> DNS
+DNS --> Gateway
+
+Gateway --> WP1
+Gateway --> WP2
+
+WP1 --> DB
+WP2 --> DB
+
+WP1 --> S3
+WP2 --> S3
 ```
-# Technology Decisions
 
-This document explains why specific tools and services were selected for the platform.
+Detailed architecture explanation is available in:
 
----
-
-## AWS EC2
-
-Chosen for hosting the WordPress containers.
-
-Reasons:
-
-- flexible compute environment
-- easy integration with other AWS services
-- suitable for container workloads
-- widely used in production environments
-
-Alternative considered:
-
-- Kubernetes
-- AWS ECS
-
-These were not chosen to keep the platform simpler while still demonstrating infrastructure automation.
+docs/architecture.md
 
 ---
 
-## Docker
+## Key Features
 
-Used to containerize WordPress instances.
-
-Benefits:
-
-- isolation between client sites
-- reproducible deployments
-- easier scaling and management
-
-Without containers, plugin conflicts or dependency issues could affect multiple sites.
+- automatic provisioning of WordPress sites
+- domain routing using Nginx reverse proxy
+- container isolation between clients
+- infrastructure managed using Terraform
+- monitoring with Prometheus and Grafana
+- failure analysis documentation
 
 ---
 
-## Nginx
+## Technology Stack
 
-Used as the reverse proxy gateway.
+- AWS EC2
+- Docker
+- Nginx
+- Terraform
+- MySQL
+- Prometheus
+- Grafana
 
-Responsibilities:
+Technology decisions explained in:
 
-- route domains to correct WordPress containers
-- handle SSL termination
-- provide load balancing capability
-
-Example routing:
-
-client1.com → wordpress-container-1  
-client2.com → wordpress-container-2
-
----
-
-## Terraform
-
-Used for Infrastructure as Code.
-
-Reasons:
-
-- declarative infrastructure management
-- reproducible environments
-- easy version control
-
-Terraform allows infrastructure to be recreated quickly if a server fails.
+docs/tech-decisions.md
 
 ---
 
-## MySQL
+## Project Structure
 
-Used as the WordPress database.
-
-Reasons:
-
-- WordPress native compatibility
-- reliable relational database
-- widely supported and documented
-
-In production environments this would typically be hosted on AWS RDS.
-
----
-
-## Amazon S3
-
-Used for media storage.
-
-Reasons:
-
-- scalable object storage
-- prevents local disk exhaustion
-- allows CDN integration
-
-Media files uploaded by WordPress can be stored externally instead of on the server.
+```bash
+wordpress-platform/
+│
+├── infrastructure
+├── provisioning-service
+├── nginx-gateway
+├── wordpress-template
+├── monitoring
+└── docs
+```
 
 ---
 
-## Prometheus + Grafana
+## Request Flow
 
-Used for monitoring and observability.
+1. user visits a client domain
+2. DNS resolves domain using Route53
+3. request reaches Nginx gateway
+4. Nginx routes request to correct WordPress container
+5. WordPress retrieves data from database
+6. response returned to user
 
-Prometheus collects metrics such as:
+---
 
-- CPU usage
-- memory consumption
-- container health
+## Running the Platform Locally
 
-Grafana provides dashboards for visualization.
+Clone the repository
+
+```bash
+git clone https://github.com/username/wordpress-platform
+cd wordpress-platform
+```
+
+Start containers
+
+```bash
+docker-compose up -d
+```
+
+Verify running containers
+
+```bash
+docker ps
+```
+
+---
+
+## Operational Documentation
+
+Additional system documentation is available:
+
+- docs/architecture.md
+- docs/deployment.md
+- docs/failures.md
+- docs/scaling.md
+- docs/runbook.md
+
+These documents describe system design, operational failures, scaling strategies, and incident handling.
+
+---
+
+## Purpose of the Project
+
+This project simulates a simplified version of a multi-tenant hosting platform similar to managed WordPress hosting providers.  
+
+The focus is demonstrating:
+
+- system design
+- infrastructure automation
+- operational reliability
+- platform engineering concepts
