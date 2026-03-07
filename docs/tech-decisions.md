@@ -1,14 +1,3 @@
-## project
-``` bash 
-wordpress-platform/
-├── infrastructure          # Terraform / AWS resources
-├── provisioning-service    # API that creates new WordPress sites
-├── nginx-gateway           # Reverse proxy + domain routing
-├── wordpress-template      # Base WordPress Docker image
-├── monitoring              # Prometheus / Grafana configs
-└── docs                    # Architecture and setup guides
-
-```
 # Technology Decisions
 
 This document explains why specific tools and services were selected for the platform.
