@@ -1,9 +1,9 @@
-
-*system overview
-*network layout
-*services used
-*client onboarding flow
-*failure handling strategy
+## ARCHITECTURE 
+      - system overview
+      - network layout
+      - services used
+      - client onboarding flow
+      - failure handling strategy
 
  ## System 
  ```
