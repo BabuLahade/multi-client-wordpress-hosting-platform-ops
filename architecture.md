@@ -98,3 +98,53 @@ Provision --> WP2
 
 Monitoring --> Dash
 ```
+
+# System Architecture
+
+## Overview
+
+This platform provisions and hosts multiple WordPress websites for different clients using containerized infrastructure.
+
+---
+
+## High Level Architecture
+
+```mermaid
+flowchart TD
+
+User[Client Browser]
+DNS[Route53 DNS]
+Gateway[Nginx Gateway]
+
+WP1[WordPress Container - Client1]
+WP2[WordPress Container - Client2]
+
+DB1[(MySQL DB - Client1)]
+DB2[(MySQL DB - Client2)]
+
+User --> DNS
+DNS --> Gateway
+
+Gateway --> WP1
+Gateway --> WP2
+
+WP1 --> DB1
+WP2 --> DB2
+```
+
+```mermaid
+flowchart TD
+
+User --> Cloudflare
+Cloudflare --> Route53
+Route53 --> EC2
+
+EC2 --> Nginx
+Nginx --> WordPress1
+Nginx --> WordPress2
+
+WordPress1 --> RDS1
+WordPress2 --> RDS2
+
+Prometheus --> Grafana
+```
