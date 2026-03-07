@@ -1,0 +1,33 @@
+resource "aws_subnet" "public" {
+  vpc_id = aws_vpc.main.id
+  count = length(var.public_subnet_cidrs)
+  cidr_block= var.public_subnet_cidrs[count.index]
+  availability_zone = var.availability_zones[count.index]
+  map_public_ip_on_launch = true
+  tags = {
+     Name ="${var.project_name}-public-subnet-[count.index +1 ]"
+
+  }
+}
+
+resource "aws_subnet" "private-app" {
+  vpc_id = aws_vpc.main.id
+  count = length(var.private_app_subnet_cidrs)
+  cidr_block = var.private_app_subnet_cidrs[count.index]
+  availability_zone= var.availability_zones[count.index]
+  map_public_ip_on_launch = false
+  tags = {
+    Name = "${var.project_name}-private-app-subnet-[count.index +1 ]"  
+  }
+}
+
+resource "aws_subnet" "private-db" {
+    vpc_id = aws_vpc.main.id
+    count = lenght(var.private_db_subnet_cidrs)
+    cidr_block = var.private_db_subnet_cidrs[count.index]
+    availability_zone = var.availability_zones[count.index]
+    map_public_ip_on_launch = false
+    tags ={
+        Name = "${var.project_name}-private-db-subnet-[count.index +1 ]"
+    }
+}
