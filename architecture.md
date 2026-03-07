@@ -1,5 +1,5 @@
 ## ARCHITECTURE 
-    - system overview
+ - system overview
       - network layout
       - services used
       - client onboarding flow
@@ -57,4 +57,44 @@ This platform hosts multiple WordPress sites using containerized infrastructure.
 
 ```bash
 docker ps
+```
+```mermaid
+flowchart TD
+
+User[Client Browser]
+
+CDN[Cloudflare CDN]
+DNS[Route53]
+
+LB[Load Balancer / Nginx Gateway]
+
+Provision[Provisioning Service API]
+
+WP1[WordPress Container - Client1]
+WP2[WordPress Container - Client2]
+
+DB[(MySQL / RDS Database)]
+
+Storage[S3 Media Storage]
+
+Monitoring[Prometheus]
+Dash[Grafana]
+
+User --> CDN
+CDN --> DNS
+DNS --> LB
+
+LB --> WP1
+LB --> WP2
+
+WP1 --> DB
+WP2 --> DB
+
+WP1 --> Storage
+WP2 --> Storage
+
+Provision --> WP1
+Provision --> WP2
+
+Monitoring --> Dash
 ```
