@@ -3,7 +3,11 @@ variable "project_name" {
   type =string
 }
 
-variable "private_app_subnet_cidrs" {
+variable "private_app_subnet_ids" {
+  description = "value"
+  type = list(string)
+}
+variable "public_subnet_ids" {
   description = "value"
   type = list(string)
 }

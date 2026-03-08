@@ -1,0 +1,27 @@
+variable "vpc_id" {
+  type        = string
+  description = "VPC where internet gateway will be attached"
+}
+
+variable "project_name" {
+  type = string
+}
+
+variable "public_subnet_id" {
+  type        = string
+  description = "Public subnet where NAT gateway will be deployed"
+}
+variable "availability_zone" {
+  type        = string
+  description = "Availability zone for the NAT gateway"
+}
+variable "private_app_subnet_ids" {
+  type        = list(string)
+  description = "List of private application subnet IDs to associate with the route table"
+}
+variable "public_subnet_cidrs" {
+  type = list(string)
+}
+variable "public_subnet_ids" {
+  type = list(string)
+}   
