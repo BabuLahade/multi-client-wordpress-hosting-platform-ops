@@ -1,0 +1,305 @@
+Understanding **how a request flows through your platform** is critical. This is exactly how real engineers validate an architecture.
+
+Below is the **request lifecycle when a visitor opens a client website** hosted on your platform.
+
+---
+
+# Visitor Request Flow
+
+![Image](https://developers.cloudflare.com/_astro/lb-ref-arch-28-ALT.Dwf-s8s__1NmnXS.svg)
+
+![Image](https://www.psychz.net/content/loadbalancing/load-balancing.jpg)
+
+![Image](https://learn.microsoft.com/azure/architecture/example-scenario/infrastructure/media/wordpress-app-service.png)
+
+![Image](https://miro.medium.com/0%2AoL19DXX4FFnCn_rB)
+
+---
+
+# Step 1 — User Opens Website
+
+Example visitor request:
+
+```id="jvyrzq"
+https://client1.platform-domain.com
+```
+
+The browser begins resolving the domain.
+
+---
+
+# Step 2 — DNS Resolution
+
+The browser queries DNS.
+
+```id="b0v6g4"
+client1.platform-domain.com
+```
+
+DNS provider:
+
+```id="3ui8ld"
+AWS Route53
+```
+
+DNS returns the platform endpoint.
+
+Example:
+
+```id="m1uv34"
+Application Load Balancer IP
+```
+
+Now the browser knows where to send the request.
+
+---
+
+# Step 3 — CDN / Security Layer
+
+The request first reaches:
+
+```id="rjld6s"
+Cloudflare / CloudFront
+```
+
+This layer provides:
+
+* DDoS protection
+* caching
+* TLS termination
+* bot filtering
+
+If cached content exists, it may respond immediately.
+
+Otherwise the request continues.
+
+---
+
+# Step 4 — Load Balancer
+
+The request reaches the platform entry point.
+
+```id="7u7o3j"
+AWS Application Load Balancer
+```
+
+Purpose:
+
+* distribute traffic
+* route requests to healthy servers
+
+Example distribution:
+
+```id="pzw48u"
+EC2 instance A
+EC2 instance B
+```
+
+Load balancing prevents overload on a single server.
+
+---
+
+# Step 5 — Reverse Proxy Layer
+
+On the server, the request hits:
+
+```id="49a2f7"
+Nginx reverse proxy
+```
+
+Nginx determines which container should handle the request.
+
+Example routing rule:
+
+```id="cavgy2"
+client1.platform-domain.com
+      ↓
+wordpress-client1 container
+```
+
+Another domain:
+
+```id="q5eshu"
+client2.platform-domain.com
+      ↓
+wordpress-client2 container
+```
+
+---
+
+# Step 6 — WordPress Container
+
+The selected container processes the request.
+
+Inside the container:
+
+```id="o82l3d"
+PHP runtime
+WordPress core
+plugins
+themes
+```
+
+WordPress prepares the page content.
+
+---
+
+# Step 7 — Cache Layer
+
+Before hitting the database, WordPress checks cache.
+
+Example:
+
+```id="z2fcbp"
+Redis object cache
+```
+
+If cached data exists:
+
+```id="u6ywm5"
+response returned immediately
+```
+
+This reduces database queries.
+
+---
+
+# Step 8 — Database Query
+
+If data is not cached, WordPress queries the database.
+
+Database service:
+
+```id="xnx1tt"
+AWS RDS MySQL
+```
+
+Example query:
+
+```id="g6m7ke"
+SELECT * FROM posts
+```
+
+The database returns content.
+
+---
+
+# Step 9 — Media Retrieval
+
+Images and files are served from object storage.
+
+Storage:
+
+```id="bxfm3o"
+AWS S3
+```
+
+Example:
+
+```id="jpt4s6"
+blog-image.jpg
+```
+
+This prevents large media from loading the application server.
+
+---
+
+# Step 10 — Response Returned to User
+
+WordPress generates the final HTML page.
+
+Response flow:
+
+```id="o2e0yz"
+WordPress container
+      ↓
+Nginx
+      ↓
+Load Balancer
+      ↓
+CDN
+      ↓
+User browser
+```
+
+The website renders in the browser.
+
+---
+
+# Complete Request Path
+
+Full path:
+
+```id="8wq3t7"
+User Browser
+      ↓
+DNS (Route53)
+      ↓
+CDN / Cloudflare
+      ↓
+Application Load Balancer
+      ↓
+Nginx Reverse Proxy
+      ↓
+WordPress Container
+      ↓
+Redis Cache
+      ↓
+RDS Database
+      ↓
+S3 Storage
+```
+
+---
+
+# What Happens During High Traffic
+
+Caching layers reduce load.
+
+Example traffic handling:
+
+```id="sbhhy6"
+1000 requests
+↓
+900 served from CDN
+80 served from Redis cache
+20 reach database
+```
+
+This dramatically improves performance.
+
+---
+
+# Why This Flow Matters
+
+Engineers use this to reason about:
+
+* latency
+* bottlenecks
+* failure points
+* scaling strategies
+
+If any layer fails, the platform must handle it.
+
+---
+
+# Reality Check
+
+Many beginner projects show:
+
+```id="a4o5v0"
+browser → server → database
+```
+
+Your platform architecture demonstrates:
+
+* layered request processing
+* caching strategies
+* traffic distribution
+* infrastructure abstraction
+
+This level of thinking aligns with **production web platform design**.
+
+---
+
+If you want, the next useful exercise is **mapping the exact request flow during a failure scenario** (for example: database failure or container crash). That shows how resilient the architecture is.

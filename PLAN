@@ -1,0 +1,410 @@
+## Target Platform Architecture
+
+![Image](https://d2908q01vomqb2.cloudfront.net/fc074d501302eb2b93e2554793fcaf50b3bf7291/2024/09/24/lets-architect-saas-fig1.png)
+
+![Image](https://media2.dev.to/dynamic/image/width%3D800%2Cheight%3D%2Cfit%3Dscale-down%2Cgravity%3Dauto%2Cformat%3Dauto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fuploads%2Farticles%2F6m7wkfv6ja74hly1i002.png)
+
+![Image](https://www.nextbraintech.com/assets/admin/base/images/blog/537.png)
+
+![Image](https://substackcdn.com/image/fetch/f_auto%2Cq_auto%3Agood%2Cfl_progressive%3Asteep/https%3A%2F%2Fsubstack-post-media.s3.amazonaws.com%2Fpublic%2Fimages%2Fb807136c-5728-4bec-bfdd-0b948c5bcba4_766x331.png)
+
+### Final architecture overview
+
+Your platform eventually should resemble this structure:
+
+```
+Internet
+   ↓
+Cloudflare / CDN
+   ↓
+AWS Route53
+   ↓
+Application Load Balancer
+   ↓
+EC2 Instances (Docker)
+   ↓
+Nginx Reverse Proxy
+   ↓
+WordPress Containers (per client)
+   ↓
+Redis Cache
+   ↓
+AWS RDS MySQL
+   ↓
+S3 Storage (media + backups)
+```
+
+Supporting systems:
+
+```
+Monitoring → Prometheus + Grafana
+Logs → Loki
+Automation → Provisioning API (Node.js)
+CI/CD → GitHub Actions
+Infrastructure → Terraform
+```
+
+This architecture enables:
+
+* multi-tenant hosting
+* automated provisioning
+* scalable traffic handling
+* operational observability
+
+---
+
+# Platform Development Phases
+
+Each phase introduces **one new capability** while keeping the system operational.
+
+---
+
+# Phase 0 — Platform Foundation
+
+## Goal
+
+Prepare the development and cloud environment before building infrastructure.
+
+### Key outcomes
+
+* cloud account configured
+* domain and DNS available
+* development tools installed
+* repository structure defined
+
+### Services / Tools
+
+```
+AWS Account
+Route53
+Git
+Docker
+Node.js
+Terraform
+AWS CLI
+```
+
+### Result
+
+You have:
+
+* project repository
+* domain ready for routing
+* infrastructure tools ready
+
+No servers yet.
+
+---
+
+# Phase 1 — Basic Multi-Site Hosting Node
+
+## Goal
+
+Run multiple WordPress sites on one server using containers.
+
+### Architecture
+
+```
+Internet
+   ↓
+DNS
+   ↓
+Nginx Reverse Proxy
+   ↓
+WordPress Containers
+   ↓
+MySQL Container
+```
+
+### Services / Tools
+
+```
+EC2
+Docker
+Docker Compose
+Nginx
+MySQL container
+```
+
+### Platform capability
+
+* host 3–10 WordPress sites
+* domain-based routing
+* container isolation
+
+### Limitation
+
+* single server failure
+* database not durable
+* no automation
+
+---
+
+# Phase 2 — Data Durability and External Storage
+
+## Goal
+
+Ensure data survives server failures.
+
+### Architecture improvement
+
+```
+WordPress Containers
+      ↓
+AWS RDS MySQL
+      ↓
+S3 storage for media
+```
+
+### Services / Tools
+
+```
+AWS RDS MySQL
+AWS S3
+IAM roles
+cron backup scripts
+```
+
+### Platform capability
+
+* reliable database
+* automated backups
+* scalable storage
+
+### Problem solved
+
+If EC2 crashes, **data is preserved**.
+
+---
+
+# Phase 3 — Deployment Automation
+
+## Goal
+
+Automate infrastructure and deployments.
+
+### Architecture improvement
+
+```
+GitHub
+   ↓
+CI/CD Pipeline
+   ↓
+Infrastructure Deployment
+   ↓
+Docker Containers
+```
+
+### Services / Tools
+
+```
+GitHub Actions
+Terraform
+Docker registry
+AWS CLI
+```
+
+### Platform capability
+
+* automated deployments
+* infrastructure reproducibility
+* consistent environment setup
+
+---
+
+# Phase 4 — Monitoring and Observability
+
+## Goal
+
+Gain visibility into platform health.
+
+### Architecture addition
+
+```
+Containers
+   ↓
+Prometheus metrics
+   ↓
+Grafana dashboards
+```
+
+Logs pipeline:
+
+```
+Containers
+   ↓
+Loki
+   ↓
+Grafana logs
+```
+
+### Services / Tools
+
+```
+Prometheus
+Grafana
+Node Exporter
+cAdvisor
+Loki
+Alertmanager
+```
+
+### Platform capability
+
+* track CPU / memory
+* detect outages
+* receive alerts
+
+---
+
+# Phase 5 — Automated Client Provisioning
+
+## Goal
+
+Create WordPress sites automatically.
+
+### Architecture addition
+
+```
+Admin Request
+      ↓
+Provisioning API
+      ↓
+Create Database
+Deploy Container
+Configure Nginx
+Create DNS
+Generate SSL
+```
+
+### Services / Tools
+
+```
+Node.js API
+Docker CLI
+AWS SDK
+WP-CLI
+Certbot
+```
+
+### Platform capability
+
+* new client site created automatically
+* provisioning time ~1–2 minutes
+* minimal manual work
+
+---
+
+# Phase 6 — Performance Optimization
+
+## Goal
+
+Handle high traffic efficiently.
+
+### Architecture addition
+
+```
+CloudFront CDN
+      ↓
+Nginx cache
+      ↓
+Redis object cache
+      ↓
+WordPress containers
+```
+
+### Services / Tools
+
+```
+CloudFront
+Redis
+Nginx caching
+```
+
+### Platform capability
+
+* high traffic handling
+* reduced database load
+* faster page delivery
+
+---
+
+# Phase 7 — High Availability
+
+## Goal
+
+Ensure platform remains online during infrastructure failures.
+
+### Architecture upgrade
+
+```
+Load Balancer
+      ↓
+Multiple EC2 nodes
+      ↓
+Container cluster
+```
+
+Database:
+
+```
+RDS Multi-AZ
+```
+
+### Services / Tools
+
+```
+AWS ALB
+Auto Scaling Group
+RDS Multi-AZ
+```
+
+### Platform capability
+
+* no single server failure
+* traffic distributed
+* platform redundancy
+
+---
+
+# Final Platform Capabilities
+
+Your completed system will provide:
+
+```
+Multi-tenant WordPress hosting
+Automated client onboarding
+Container isolation
+Reliable database
+Scalable storage
+Traffic caching
+Infrastructure monitoring
+High availability
+```
+
+This resembles **a simplified version of commercial hosting platforms**.
+
+---
+
+## Reality Perspective
+
+Most beginner projects implement only:
+
+```
+EC2
+Docker
+WordPress
+```
+
+Your platform approach demonstrates:
+
+* infrastructure design
+* automation engineering
+* platform reliability
+* operational observability
+
+These competencies align closely with responsibilities in **DevOps and platform engineering roles**.
+
+---
+
+If useful, the next step could be mapping **how data flows through the platform when a visitor opens a client website**. That helps verify the architecture is logically consistent.
