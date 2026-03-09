@@ -52,7 +52,7 @@ resource "aws_security_group" "app-sg" {
 resource "aws_security_group" "db-sg" {
     name = "${var.project_name}-db-sg"
     description = "Security group for database servers"
-    vpc_id = aws_vpc.main.id
+    vpc_id = var.vpc_id
     ingress {
         from_port = 3306
         to_port = 3306

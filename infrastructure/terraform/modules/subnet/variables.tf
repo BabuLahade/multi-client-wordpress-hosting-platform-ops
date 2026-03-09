@@ -20,3 +20,7 @@ variable "availability_zones" {
     description = "List of availability zones for subnets"
     type = list(string)
 }
+variable "vpc_id" {
+  description = "VPC ID for subnets"
+  type        = string
+}

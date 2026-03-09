@@ -11,3 +11,7 @@ variable "public_subnet_ids" {
   description = "value"
   type = list(string)
 }
+variable "vpc_id" {
+  description = "VPC ID for route table"
+  type        = string
+}
