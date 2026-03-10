@@ -4,27 +4,27 @@
 #   value       = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${module.ec2.public_ip}"
 # }
 
-output "ec2_public_ip" {
-  value = module.ec2.public_ip
-}
+# output "ec2_public_ip" {
+#   value = module.ec2.public_ip
+# }
 
-output "alb_dns_name" {
-  description = "Point all client domains here (CNAME)"
-  value       = module.alb.alb_dns_name
-}
+# output "alb_dns_name" {
+#   description = "Point all client domains here (CNAME)"
+#   value       = module.alb.alb_dns_name
+# }
 
-output "rds_endpoint" {
-  value     = module.rds.rds_endpoint
-  sensitive = true
-}
+# output "rds_endpoint" {
+#   value     = module.rds.rds_endpoint
+#   sensitive = true
+# }
 
-output "s3_media_bucket" {
-  value = module.s3.media_bucket_name
-}
+# output "s3_media_bucket" {
+#   value = module.s3.media_bucket_name
+# }
 
-output "s3_backup_bucket" {
-  value = module.s3.backup_bucket_name
-}
+# output "s3_backup_bucket" {
+#   value = module.s3.backup_bucket_name
+# }
 
 # ── DNS SETUP INSTRUCTIONS ───────────────────────────────────
 # output "dns_instructions" {
@@ -35,3 +35,9 @@ output "s3_backup_bucket" {
 #   ])
 # }
 
+output "public_ip" {
+    value = module.ec2.public_ip
+}
+output "vpc_id" {
+    value = module.vpc.vpc_id
+}
