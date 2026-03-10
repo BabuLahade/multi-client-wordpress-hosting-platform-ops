@@ -20,3 +20,7 @@ variable "igw_id" {
   description = "Internet Gateway ID to route traffic to the internet"
   type        = string
 }
+variable "natgw_ids" {
+  description = "List of NAT Gateway IDs to route traffic from private subnets to the internet"
+  type        = list(string)
+}
