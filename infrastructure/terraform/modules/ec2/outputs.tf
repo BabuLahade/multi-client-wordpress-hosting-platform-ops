@@ -1,12 +1,12 @@
-output "instance_id" {
-    description = "The ID of the EC2 instance"
-    value = aws_instance.wordpress.id
+output "instance_ids" {
+    value = aws_instance.app_instance[*].id
+}
+output "instance_public_ips" {
+    value = aws_instance.app_instance[*].public_ip
 }
 output "public_ip" {
-    description = "The public IP address of the EC2 instance"
-    value = aws_instance.wordpress.public_ip
+    value = aws_instance.app_instance[*].public_ip
 }
-output "security_group_id" {
-    description = "The ID of the security group associated with the EC2 instance"
-    value = aws_instance.wordpress.security_groups[0]
-}
+output "private_ip" {
+    value = aws_instance.app_instance[*].private_ip
+}   
