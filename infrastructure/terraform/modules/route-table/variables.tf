@@ -15,3 +15,8 @@ variable "vpc_id" {
   description = "VPC ID for route table"
   type        = string
 }
+
+variable "igw_id" {
+  description = "Internet Gateway ID to route traffic to the internet"
+  type        = string
+}
