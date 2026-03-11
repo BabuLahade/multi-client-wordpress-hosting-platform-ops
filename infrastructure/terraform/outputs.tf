@@ -68,3 +68,4 @@ output "public_route_table_id" {
 output "private_route_table_ids" {
     value = module.route_table.private_route_table_ids
 }
+
