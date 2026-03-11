@@ -96,6 +96,6 @@ module "route_table" {
     natgw_ids = module.igw_natgw.natgw_ids
     public_subnet_ids = module.subnet.public_subnet_ids
     private_app_subnet_ids = module.subnet.private_app_subnet_ids
-    # private_db_subnet_ids = module.subnet.private_db_subnet_ids 
+    private_db_subnet_ids = module.subnet.private_db_subnet_ids 
 
 }
