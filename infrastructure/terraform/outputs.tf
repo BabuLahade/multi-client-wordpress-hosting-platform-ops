@@ -1,4 +1,4 @@
-# ── CONNECT INFO ─────────────────────────────────────────────
+# # ── CONNECT INFO ─────────────────────────────────────────────
 # output "ssh_command" {
 #   description = "SSH into EC2"
 #   value       = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${module.ec2.public_ip}"
@@ -26,7 +26,7 @@
 #   value = module.s3.backup_bucket_name
 # }
 
-# ── DNS SETUP INSTRUCTIONS ───────────────────────────────────
+# # ── DNS SETUP INSTRUCTIONS ───────────────────────────────────
 # output "dns_instructions" {
 #   description = "Point each client domain to the ALB"
 #   value = join("\n", [
@@ -41,3 +41,8 @@
 # output "vpc_id" {
 #     value = module.vpc.vpc_id
 # }
+
+
+output "vpc_id" {
+    value = module.vpc.vpc_id
+}
