@@ -65,6 +65,6 @@ output "natgw_ids" {
 output "public_route_table_id" {
     value = module.route_table.public_route_table_id
 }
-output "private_app_route_table_id" {
-    value = module.route_table.private_app_route_table_id
+output "private_route_table_ids" {
+    value = module.route_table.private_route_table_ids
 }
