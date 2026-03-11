@@ -16,7 +16,7 @@ resource "aws_eip" "natgw_eip" {
 resource "aws_nat_gateway" "natgw" {
     count =length(var.public_subnet_ids)
     subnet_id = var.public_subnet_ids[count.index]
-    allocation_id = var.aws_eip.natgw_eip[count.index].id
+    allocation_id = aws_eip.natgw_eip[count.index].id
     tags = {
         Name = "${var.project_name}-natgw-${count.index +1}"
     }
