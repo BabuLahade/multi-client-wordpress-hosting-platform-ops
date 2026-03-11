@@ -46,3 +46,13 @@
 output "vpc_id" {
     value = module.vpc.vpc_id
 }
+
+output "public_subnet_ids" {
+    value = module.subnet.public_subnet_ids
+}
+output "private_app_subnet_ids" {
+    value = module.subnet.private_app_subnet_ids
+}
+output "private_db_subnet_ids" {
+    value = module.subnet.private_db_subnet_ids
+}

@@ -27,15 +27,15 @@ variable "availability_zones" {
     description = "Availability zones for the subnets"
     type        = list(string)
 }
-variable "public_subnet_ids" {
-    description = "List of public subnet IDs to associate with the route table"
-    type        = list(string)
-}
-variable "private_app_subnet_ids" {
-    description = "List of private application subnet IDs to associate with the route table"
-    type        = list(string)
-}
-variable "private_db_subnet_ids" {
-    description = "List of private database subnet IDs to associate with the route table"
-    type        = list(string)
-}
+# variable "public_subnet_ids" {
+#     description = "List of public subnet IDs to associate with the route table"
+#     type        = list(string)
+# }
+# variable "private_app_subnet_ids" {
+#     description = "List of private application subnet IDs to associate with the route table"
+#     type        = list(string)
+# }
+# variable "private_db_subnet_ids" {
+#     description = "List of private database subnet IDs to associate with the route table"
+#     type        = list(string)
+# }
