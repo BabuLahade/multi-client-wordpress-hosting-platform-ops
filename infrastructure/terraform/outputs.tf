@@ -60,5 +60,5 @@ output "igw_id" {
     value = module.igw_natgw.igw_id
 }
 output "natgw_ids" {
-    value = module.igw_natgw.natgw_ids
+  value = module.igw_natgw.natgw_ids
 }

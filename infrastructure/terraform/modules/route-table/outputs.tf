@@ -1,9 +1,9 @@
-output "igw_id" {
-    value = aws_internet_gateway.igw.id
+output "route_table_id" {
+    value = aws_route_table.private_rt.id
+}   
+output "public_route_table_id" {
+    value = aws_route_table.public_rt.id
 }
-output "natgw_ids" {
-    value = aws_nat_gateway.natgw[*].id
+output "private_app_route_table_id" {
+    value = aws_route_table.private_app_rt.id
 }
-# output "vpc_id" {
-#     value = var.vpc_id
-# }

@@ -24,3 +24,7 @@ variable "natgw_ids" {
   description = "List of NAT Gateway IDs to route traffic from private subnets to the internet"
   type        = list(string)
 }
+variable "private_db_subnet_ids" {
+  description = "List of private database subnet IDs to associate with the route table"
+  type        = list(string)      
+}
