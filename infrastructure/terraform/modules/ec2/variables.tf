@@ -19,3 +19,7 @@ variable "project_name" {
     description = "The name of the project, used for tagging resources"
     type = string
 }
+variable "key_name" {
+    description = "Key pair name for EC2 instances"
+    type = string
+}

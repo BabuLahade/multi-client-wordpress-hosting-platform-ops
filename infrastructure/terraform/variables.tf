@@ -64,3 +64,15 @@ variable "private_db_subnet_cidrs" {
   description = "CIDR blocks for private database subnets"
   type        = list(string)
 }
+variable "ami_id" {
+  description = "AMI ID for EC2 instances"
+  type        = string
+}
+variable "instance_type" {
+  description = "Instance type for EC2"
+  type        = string
+}
+variable "key_name" {
+  description = "Key pair name for EC2 instances"
+  type        = string
+} 

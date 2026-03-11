@@ -44,28 +44,28 @@
 
 
 output "vpc_id" {
-    value = module.vpc.vpc_id
+  value = module.vpc.vpc_id
 }
 
 output "public_subnet_ids" {
-    value = module.subnet.public_subnet_ids
+  value = module.subnet.public_subnet_ids
 }
 output "private_app_subnet_ids" {
-    value = module.subnet.private_app_subnet_ids
+  value = module.subnet.private_app_subnet_ids
 }
 output "private_db_subnet_ids" {
-    value = module.subnet.private_db_subnet_ids
+  value = module.subnet.private_db_subnet_ids
 }
 output "igw_id" {
-    value = module.igw_natgw.igw_id
+  value = module.igw_natgw.igw_id
 }
 output "natgw_ids" {
   value = module.igw_natgw.natgw_ids
 }
 output "public_route_table_id" {
-    value = module.route_table.public_route_table_id
+  value = module.route_table.public_route_table_id
 }
 output "private_route_table_ids" {
-    value = module.route_table.private_route_table_ids
+  value = module.route_table.private_route_table_ids
 }
 
