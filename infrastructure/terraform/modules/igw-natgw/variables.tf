@@ -8,12 +8,12 @@ variable "project_name" {
 }
 
 variable "public_subnet_id" {
-  type        = string
+  type        = list(string)
   description = "Public subnet where NAT gateway will be deployed"
 }
-variable "availability_zone" {
-  type        = string
-  description = "Availability zone for the NAT gateway"
+variable "availability_zones" {
+  type        = list(string)
+  description = "Availability zones for the NAT gateway"
 }
 variable "private_app_subnet_ids" {
   type        = list(string)

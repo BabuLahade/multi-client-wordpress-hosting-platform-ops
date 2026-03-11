@@ -81,7 +81,7 @@ module "igw_natgw" {
   vpc_id       = module.vpc.vpc_id
   # vpc_cidr = var.vpc_cidr
   public_subnet_id  = module.subnet.public_subnet_ids
-  availability_zone = var.availability_zones[count.index]
+  availability_zones = var.availability_zones
   # private_db_subnet_ids = module.subnet.private_db_subnet_ids
   private_app_subnet_ids = module.subnet.private_app_subnet_ids
   public_subnet_cidrs    = var.public_subnet_cidrs
@@ -113,5 +113,6 @@ module "ec2" {
   ami_id = var.ami_id
   key_name = var.key_name
   instance_type = var.instance_type
-  security_group_id = module.security_group.security_group_ids[0]
+#   subnet_id = module.subnet.private_app_subnet_ids[count.index] 
+  security_group_id = module.security_group.security_group_ids
 }

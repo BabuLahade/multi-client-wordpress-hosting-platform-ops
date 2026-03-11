@@ -12,7 +12,7 @@ resource "aws_subnet" "public_subnet" {
 
 resource "aws_subnet" "private_app_subnet" {
     count =length(var.private_app_subnet_cidrs)
-    vpc_id = var.vpc_cidr
+    vpc_id = var.vpc_id
     cidr_block = var.private_app_subnet_cidrs[count.index]
     availability_zone = var.availability_zones[count.index]
     map_public_ip_on_launch = false
@@ -24,7 +24,7 @@ resource "aws_subnet" "private_app_subnet" {
 
 resource "aws_subnet" "private_db_subnet" {
     count =length(var.private_db_subnet_cidrs)
-    vpc_id = var.vpc_cidr
+    vpc_id = var.vpc_id
     cidr_block = var.private_db_subnet_cidrs[count.index]
     availability_zone = var.availability_zones[count.index]
     map_public_ip_on_launch = false     
