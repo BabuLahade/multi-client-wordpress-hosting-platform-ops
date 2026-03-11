@@ -1,4 +1,4 @@
-resource "asw_security_group" "alb_sg" {
+resource "aws_security_group" "alb_sg" {
     name = "${var.project_name}-alb-sg"
     description = "Security group for ALB"
     vpc_id = var.vpc_id
