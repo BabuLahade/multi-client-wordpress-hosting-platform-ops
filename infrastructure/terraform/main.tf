@@ -137,3 +137,7 @@ module "rds" {
   db_security_group_id = module.security_group.db_security_group_id
   # db_subnet_group_name = module.rds.db_subnet_group_name
 }
+module "IAM" {
+  source = "./modules/IAM"
+  project_name = var.project_name
+}
