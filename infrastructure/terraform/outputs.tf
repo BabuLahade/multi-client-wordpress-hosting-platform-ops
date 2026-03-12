@@ -1,12 +1,13 @@
 # # ── CONNECT INFO ─────────────────────────────────────────────
-output "ssh_command" {
-  description = "SSH into EC2"
-  value       = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${module.ec2.public_ip}"
-}
+# output "ssh_command" {
+#   description = "SSH into EC2"
+#   value       = "ssh -i ~/.ssh/${var.key_name}.pem ubuntu@${module.ec2.public_ip}"
+# }
 
-output "ec2_public_ip" {
-  value = module.ec2.public_ip
-}
+# output "ip_address" {
+#     value = module.ec2.public_ip
+
+# }
 
 # output "alb_dns_name" {
 #   description = "Point all client domains here (CNAME)"
@@ -35,9 +36,9 @@ output "ec2_public_ip" {
 #   ])
 # }
 
-output "public_ip" {
-    value = module.ec2.public_ip
-}
+# output "public_ip" {
+#     value = module.ec2.public_ip
+# }
 # output "vpc_id" {
 #     value = module.vpc.vpc_id
 # }
@@ -69,3 +70,7 @@ output "private_route_table_ids" {
   value = module.route_table.private_route_table_ids
 }
 
+output "ec2_public_ips" {
+  description = "Public IPs of EC2 instances"
+  value       = module.ec2.instance_public_ips
+}
