@@ -107,12 +107,12 @@ variable "db_name" {
   description = "the name of the database to create"
   type        = string
 }
-variable "db_security_group_id" {
-  description = "the security group ID to associate with the RDS instance"
-  type        = string
+# variable "db_security_group_id" {
+#   description = "the security group ID to associate with the RDS instance"
+#   type        = string
   
-}
-variable "db_subnet_group_name" {
-  description = "the name of the DB subnet group to associate with the RDS instance"
-  type        = string
-}
+# }
+# variable "db_subnet_group_name" {
+#   description = "the name of the DB subnet group to associate with the RDS instance"
+#   type        = string
+# }
