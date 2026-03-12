@@ -116,3 +116,23 @@ module "ec2" {
 #   subnet_id = module.subnet.private_app_subnet_ids[count.index] 
   security_group_id = module.security_group.security_group_ids
 }
+
+module "s3" {
+  source = "./modules/s3"
+  project_name = var.project_name
+}
+
+
+module "rds" { 
+  source = "./modules/RDS"
+  project_name = var.project_name
+  db_instance_class = var.db_instance_class
+  db_allocated_storage = var.db_allocated_storage
+  db_engine = var.db_engine
+  db_engine_version = var.db_engine_version
+  db_username = var.db_username
+  db_password = var.db_password
+  db_name = var.db_name
+  db_security_group_id = module.security_group.db_security_group_id
+  db_subnet_group_name = module.subnet.db_subnet_group_name
+}
