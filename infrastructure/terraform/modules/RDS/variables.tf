@@ -25,6 +25,7 @@ variable "db_username" {
 variable "db_password" {
   description = "the master password for the database"
   type        = string
+#   sensitive = true
 }
 variable "db_name" {
   description = "the name of the database to create"
@@ -33,8 +34,13 @@ variable "db_name" {
 variable "db_security_group_id" {
   description = "the security group ID to associate with the RDS instance"
   type        = string
+  
 }
-variable "db_subnet_group_name" {
-  description = "the name of the DB subnet group to associate with the RDS instance"
-  type        = string
+# variable "db_subnet_group_name" {
+#   description = "the name of the DB subnet group to associate with the RDS instance"
+#   type        = string
+# }
+variable "private_db_subnet_ids" {
+  description = "List of subnet IDs for the DB subnet group"
+  type        = list(string)
 }

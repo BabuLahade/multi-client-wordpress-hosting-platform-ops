@@ -1,20 +1,19 @@
 output "db_instance_endpoint" {
-  value     = module.rds.db_instance_endpoint
-  sensitive = true
+  value = aws_db_instance.wordpress_db
 }
+
 output "db_instance_id" {
-  value     = module.rds.db_instance_id
-  sensitive = true
+  value = aws_db_instance.wordpress_db.id
 }
+
 output "db_instance_port" {
-  value     = module.rds.db_instance_port
-  sensitive = true
+  value = aws_db_instance.wordpress_db.port
 }
+
 output "db_instance_arn" {
-  value     = module.rds.db_instance_arn
-  sensitive = true
+  value = aws_db_instance.wordpress_db.arn
 }
+
 output "db_instance_status" {
-  value     = module.rds.db_instance_status
-  sensitive = true
+  value = aws_db_instance.wordpress_db.status
 }

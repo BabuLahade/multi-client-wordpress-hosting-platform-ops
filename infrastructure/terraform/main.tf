@@ -133,6 +133,7 @@ module "rds" {
   db_username = var.db_username
   db_password = var.db_password
   db_name = var.db_name
+  private_db_subnet_ids = module.subnet.private_db_subnet_ids
   db_security_group_id = module.security_group.db_security_group_id
-  db_subnet_group_name = module.subnet.db_subnet_group_name
+  # db_subnet_group_name = module.rds.db_subnet_group_name
 }
