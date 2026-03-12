@@ -109,7 +109,7 @@ module "security_group" {
 module "ec2" {
   source = "./modules/ec2"
   project_name = var.project_name
-  private_app_subnet_ids = module.subnet.private_app_subnet_ids
+  public_subnet_ids = module.subnet.public_subnet_ids
   ami_id = var.ami_id
   key_name = var.key_name
   instance_type = var.instance_type
