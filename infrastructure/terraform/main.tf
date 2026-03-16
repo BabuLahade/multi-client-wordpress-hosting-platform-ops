@@ -149,7 +149,7 @@ module "launch_template" {
   instance_type = var.instance_type
   key_name = var.key_name
   app_security_group_id = module.security_group.app_security_group_id
-  
+  iam_instance_profile_name = module.IAM.iam_instance_profile_name
 }
 
 module "alb" {
@@ -170,5 +170,5 @@ module "asg" {
   vpc_id = module.vpc.vpc_id
   private_app_subnet_ids = module.subnet.private_app_subnet_ids
   target_group_arn = module.alb.target_group_arn
-
+  launch_template_id = module.launch_template.launch_template_id
 }

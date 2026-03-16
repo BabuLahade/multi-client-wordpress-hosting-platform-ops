@@ -29,3 +29,7 @@ variable "app_security_group_id" {
   description = "Security group ID for application instances"
   type        = string
 }
+variable "iam_instance_profile_name" {
+  description = "value"
+  type = string 
+}

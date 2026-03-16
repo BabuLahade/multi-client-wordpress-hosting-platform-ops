@@ -5,7 +5,7 @@ resource "aws_autoscaling_group" "app_asg" {
     max_size = 4
     vpc_zone_identifier = var.private_app_subnet_ids
     launch_template {
-      id = aws_launch_template.app_launch_template.id
+      id = var.launch_template_id
       version = "$Latest"
     }
     target_group_arns = [
