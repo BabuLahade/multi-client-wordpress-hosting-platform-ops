@@ -9,5 +9,5 @@ resource "aws_autoscaling_group" "app_asg" {
       version = "$Latest"
     }
     target_group_arns = [
-        alb_target_group.app_target_group.arn]
+        var.target_group_arn]
 }

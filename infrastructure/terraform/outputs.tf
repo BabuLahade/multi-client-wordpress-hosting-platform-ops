@@ -70,11 +70,22 @@ output "private_route_table_ids" {
   value = module.route_table.private_route_table_ids
 }
 
-output "ec2_public_ips" {
-  description = "Public IPs of EC2 instances"
-  value       = module.ec2.instance_public_ips
-}
+# output "ec2_public_ips" {
+#   description = "Public IPs of EC2 instances"
+#   value       = module.ec2.instance_public_ips
+# }
 output "db_instance_endpoint" {
   description = "value"
   value = module.rds.db_instance_endpoint
+}
+output "alb_dns_name" {
+  value = module.alb.alb_dns_name
+}
+
+output "launch_template_id" {
+  value = module.launch_template.launch_template_id
+}
+
+output "asg_name" {
+  value = module.asg.asg_name
 }
