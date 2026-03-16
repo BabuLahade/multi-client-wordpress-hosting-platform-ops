@@ -1,0 +1,27 @@
+def movestoend();
+ 
+    for i in range(len(arr)):
+        if arr[i] != 0 ;
+            arr[pos],arr[i] = arr[i],arr[pos]
+            pos +=1
+n =int(input())
+arr = list(map(int,input().split()))
+
+movestoend(n)
+print (arr)
+
+
+n=int(input())
+arr = list(map(int,input().split()))
+
+min_pro =float('-inf')
+max = 0
+
+for i in arr:
+    if i < min_pro :
+        min_pro = i
+    else :
+        profit = i - min_pro
+        max = max(max,profit)
+
+print(max_profit)

@@ -1,16 +1,18 @@
-resource "aws_instance" "app_instance" {
+###  for phase 1 and phase 2 tsting purpose ###
 
-  count = length(var.public_subnet_ids)
+# resource "aws_instance" "app_instance" {
 
-  ami           = var.ami_id
-  instance_type = var.instance_type
-  key_name      = var.key_name
+#   count = length(var.public_subnet_ids)
 
-  subnet_id = var.public_subnet_ids[count.index]
+#   ami           = var.ami_id
+#   instance_type = var.instance_type
+#   key_name      = var.key_name
+#   iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
+#   subnet_id = var.public_subnet_ids[count.index]
 
-  vpc_security_group_ids = [var.security_group_id]
+#   vpc_security_group_ids = [var.security_group_id]
 
-  tags = {
-    Name = "${var.project_name}-app-instance-${count.index + 1}"
-  }
-}
+#   tags = {
+#     Name = "${var.project_name}-app-instance-${count.index + 1}"
+#   }
+# }
