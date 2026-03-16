@@ -3,7 +3,7 @@ resource "aws_launch_template" "app_launch_template" {
     image_id = var.ami_id
     instance_type = var.instance_type
     iam_instance_profile {
-        name = aws_iam_instance_profile.ec2_instance_profile.name
+      name = var.iam_instance_profile_name
     }
     
     key_name = var.key_name
