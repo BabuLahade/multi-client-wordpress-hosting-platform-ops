@@ -150,6 +150,7 @@ module "launch_template" {
   key_name = var.key_name
   app_security_group_id = module.security_group.app_security_group_id
   iam_instance_profile_name = module.IAM.iam_instance_profile_name
+  db_instance_endpoint = module.rds.db_instance_endpoint
 }
 
 module "alb" {
