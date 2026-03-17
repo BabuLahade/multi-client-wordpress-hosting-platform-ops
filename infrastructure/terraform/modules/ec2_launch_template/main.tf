@@ -103,7 +103,7 @@ resource "aws_launch_template" "app_launch_template" {
 
   user_data = base64encode(
     templatefile("${path.module}/user_data.sh", {
-      db_endpoint = var.db_instance_endpoint
+      db_endpoint = var.db_instance_address
     })
   )
 }

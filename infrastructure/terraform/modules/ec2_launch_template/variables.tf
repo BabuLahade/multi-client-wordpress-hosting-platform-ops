@@ -33,7 +33,11 @@ variable "iam_instance_profile_name" {
   description = "value"
   type = string 
 }
-variable "db_instance_endpoint" {
+# variable "db_instance_endpoint" {
+#   description = "value"
+#   type = string
+# }
+variable "db_instance_address" {
   description = "value"
   type = string
 }

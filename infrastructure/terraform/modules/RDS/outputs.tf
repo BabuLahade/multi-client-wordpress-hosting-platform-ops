@@ -17,3 +17,6 @@ output "db_instance_arn" {
 output "db_instance_status" {
   value = aws_db_instance.wordpress_db.status
 }
+output "db_instance_address" {
+  value = aws_db_instance.wordpress_db.address
+}
