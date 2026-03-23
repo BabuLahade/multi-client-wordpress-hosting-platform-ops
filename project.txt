@@ -324,6 +324,6 @@ If you implement the **full structure above**, you demonstrate:
 * reliability planning
 
 That looks much closer to **real DevOps or platform engineering work**.
-
+why we use ecs vs eks 
 ---
 
