@@ -36,7 +36,7 @@ services:
     environment:
       WORDPRESS_DB_HOST: ${db_endpoint}
       WORDPRESS_DB_USER: admin
-      WORDPRESS_DB_PASSWORD: Password@123
+      WORDPRESS_DB_PASSWORD: StrongPassword123!
       WORDPRESS_DB_NAME: wordpress
     volumes:
       - wordpress_data:/var/www/html
