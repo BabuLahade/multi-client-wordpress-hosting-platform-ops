@@ -77,6 +77,7 @@ resource "aws_lb_target_group" "alb_tg" {
         protocol = "HTTP"
         interval = 30
         timeout = 5
+        matcher = "200-399" 
         healthy_threshold = 5
         unhealthy_threshold = 2
 
