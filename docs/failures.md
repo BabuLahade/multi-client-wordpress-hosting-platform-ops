@@ -7,3 +7,4 @@ password mismatch and credential mismatch
 also endpoint mistamct instead endpoint use rda address 
 
 302 error healthchecks of target group shown this 
+solution added matcher = 200-309  bcz its normal bcz wordpresswnats to install it thas whya it gives you error 
