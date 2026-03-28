@@ -171,6 +171,8 @@ module "asg" {
   project_name = var.project_name
   vpc_id = module.vpc.vpc_id
   private_app_subnet_ids = module.subnet.private_app_subnet_ids
-  target_group_arn = module.alb.target_group_arn
-  launch_template_id = module.launch_template.launch_template_id
+  target_group_arn_1 = module.alb.target_group_arn_1
+  target_group_arn_2 = module.alb.target_group_arn_2
+  launch_template_id_1 = module.launch_template.launch_template_id_1
+  launch_template_id_2 = module.launch_template.launch_template_id_2
 }
