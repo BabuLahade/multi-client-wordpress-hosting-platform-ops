@@ -86,9 +86,9 @@
 #                 }
 # }
 
-resource "aws_launch_template" "app_launch_template" {
+resource "aws_launch_template" "app_launch_template_1" {
 
-  name_prefix   = "${var.project_name}-app-launch-template-"
+  name_prefix   = "${var.project_name}-app-launch-template-1-"
   image_id      = var.ami_id
   instance_type = var.instance_type
   key_name      = var.key_name
@@ -104,6 +104,31 @@ resource "aws_launch_template" "app_launch_template" {
   user_data = base64encode(
     templatefile("${path.module}/user_data.sh", {
       db_endpoint = var.db_instance_address
+      db_name= "wp-client-2"
     })
-  )
+  ) 
+}
+
+
+resource "aws_launch_template" "app_launch_template_2" {
+
+  name_prefix   = "${var.project_name}-app-launch-template-2-"
+  image_id      = var.ami_id
+  instance_type = var.instance_type
+  key_name      = var.key_name
+
+  iam_instance_profile {
+    name = var.iam_instance_profile_name
+  }
+
+  network_interfaces {
+    security_groups = [var.app_security_group_id]
+  }
+
+  user_data = base64encode(
+    templatefile("${path.module}/user_data.sh", {
+      db_endpoint = var.db_instance_address
+      db_name = "wp-client-2"
+    })
+  ) 
 }
