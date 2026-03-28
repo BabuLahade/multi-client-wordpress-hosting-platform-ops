@@ -86,6 +86,9 @@ output "alb_dns_name" {
 #   value = module.launch_template.launch_template_id
 # }
 
-output "asg_name" {
+output "asg_name_1" {
+  value = module.asg.asg_name
+}
+output "asg_name_2" {
   value = module.asg.asg_name
 }
