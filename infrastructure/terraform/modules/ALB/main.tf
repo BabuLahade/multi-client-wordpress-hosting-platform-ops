@@ -67,7 +67,7 @@ resource "aws_lb" "alb" {
 }
 
 resource "aws_lb_target_group" "alb_tg_1" {
-    name = "${var.project_name}-alb-tg-client-1"
+    name = "${var.project_name}-alb-tg-1"
     port = 80
     protocol = "HTTP"
 
@@ -85,7 +85,7 @@ resource "aws_lb_target_group" "alb_tg_1" {
 }
 
 resource "aws_lb_target_group" "alb_tg_2" {
-    name = "${var.project_name}-alb-tg-client-2"
+    name = "${var.project_name}-alb-tg-2"
     port =80
     protocol = "HTTP"
     vpc_id = var.vpc_id
