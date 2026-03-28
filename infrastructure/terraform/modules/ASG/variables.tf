@@ -14,7 +14,11 @@ variable "target_group_arn" {
     description = "value"
     type = string 
 }
-variable "launch_template_id" {
+variable "launch_template_id_1" {
+    description = "launch template id"
+    type = string
+}
+variable "launch_template_id_2" {
     description = "launch template id"
     type = string
 }
