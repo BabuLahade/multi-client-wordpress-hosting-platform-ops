@@ -76,6 +76,9 @@ server {
     }
 }
 EOF
-
+mysql -h ${db_endpoint} -u admin -pStrongPassword123! <<EOF
+CREATE DATABASE IF NOT EXISTS wp_client1;
+CREATE DATABASE IF NOT EXISTS wp_client2;
+EOF
 # Start containers
 docker-compose up -d
