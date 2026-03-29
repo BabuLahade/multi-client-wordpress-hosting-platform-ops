@@ -18,7 +18,7 @@ usermod -aG docker  ubuntu  && newgrp docker
 # curl -L https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose
 # chmod +x /usr/local/bin/docker-compose
 apt install docker-compose -y
-
+apt install musql-client -y
 # Create app directory
 mkdir -p /home/ubuntu/wordpress-hosting
 cd /home/ubuntu/wordpress-hosting
@@ -37,7 +37,7 @@ services:
       WORDPRESS_DB_HOST: ${db_endpoint}
       WORDPRESS_DB_USER: admin
       WORDPRESS_DB_PASSWORD: StrongPassword123!
-      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_NAME: ${db_name}
     volumes:
       - wordpress_data:/var/www/html
     networks:
@@ -77,8 +77,7 @@ server {
 }
 EOF
 mysql -h ${db_endpoint} -u admin -pStrongPassword123! <<EOF
-CREATE DATABASE IF NOT EXISTS wp_client1;
-CREATE DATABASE IF NOT EXISTS wp_client2;
+CREATE DATABASE IF NOT EXISTS ${db_name};
 EOF
 # Start containers
 docker-compose up -d
