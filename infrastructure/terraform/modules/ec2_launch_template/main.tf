@@ -104,7 +104,7 @@ resource "aws_launch_template" "app_launch_template_1" {
   user_data = base64encode(
     templatefile("${path.module}/user_data.sh", {
       db_endpoint = var.db_instance_address
-      db_name= "wp-client-2"
+      db_name= "wp_client_1"
     })
   ) 
 }
@@ -128,7 +128,7 @@ resource "aws_launch_template" "app_launch_template_2" {
   user_data = base64encode(
     templatefile("${path.module}/user_data.sh", {
       db_endpoint = var.db_instance_address
-      db_name = "wp-client-2"
+      db_name = "wp_client_2"
     })
   ) 
 }
