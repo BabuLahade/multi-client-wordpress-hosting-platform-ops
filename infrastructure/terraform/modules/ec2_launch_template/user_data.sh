@@ -87,7 +87,7 @@ EOF
 docker-compose up -d
 
 docker exec -it wordpress-app bash 
-
+apt install nano -y
 cat <<EOF >> /var/www/html/wp-config.php
 
 if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
