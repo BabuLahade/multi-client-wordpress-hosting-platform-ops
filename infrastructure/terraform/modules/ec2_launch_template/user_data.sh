@@ -94,7 +94,7 @@ if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PR
     \$_SERVER['HTTPS'] = 'on';
 }
 
-define('WP_HOME', 'https://your-alb-dns');
-define('WP_SITEURL', 'https://your-alb-dns');
+define('WP_HOME', 'http://${name}.');
+define('WP_SITEURL', 'https://${name}');
 
 EOF

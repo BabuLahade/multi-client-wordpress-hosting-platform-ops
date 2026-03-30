@@ -105,6 +105,7 @@ resource "aws_launch_template" "app_launch_template_1" {
     templatefile("${path.module}/user_data.sh", {
       db_endpoint = var.db_instance_address
       db_name= "wp_client_1"
+      name = "client1.local"
     })
   ) 
 }
@@ -129,6 +130,7 @@ resource "aws_launch_template" "app_launch_template_2" {
     templatefile("${path.module}/user_data.sh", {
       db_endpoint = var.db_instance_address
       db_name = "wp_client_2"
+      name = "client2.local"
     })
   ) 
 }
