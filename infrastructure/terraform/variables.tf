@@ -116,3 +116,9 @@ variable "db_name" {
 #   description = "the name of the DB subnet group to associate with the RDS instance"
 #   type        = string
 # }
+
+
+variable "clients" {
+  description = "List of clients for the WordPress hosting platform"
+  type        = list(string)
+}
