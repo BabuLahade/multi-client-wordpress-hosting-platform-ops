@@ -66,35 +66,52 @@ resource "aws_lb" "alb" {
     }
 }
 
-resource "aws_lb_target_group" "alb_tg_1" {
-    name = "${var.project_name}-alb-tg-1"
-    port = 80
-    protocol = "HTTP"
+# resource "aws_lb_target_group" "alb_tg_1" {
+#     name = "${var.project_name}-alb-tg-1"
+#     port = 80
+#     protocol = "HTTP"
 
-    vpc_id = var.vpc_id
-    health_check {
-        path = "/"
-        protocol = "HTTP"
-        interval = 30
-        timeout = 5
-        matcher = "200-399" 
-        healthy_threshold = 5
-        unhealthy_threshold = 2
+#     vpc_id = var.vpc_id
+#     health_check {
+#         path = "/"
+#         protocol = "HTTP"
+#         interval = 30
+#         timeout = 5
+#         matcher = "200-399" 
+#         healthy_threshold = 5
+#         unhealthy_threshold = 2
 
-    }
-}
+#     }
+# }
 
-resource "aws_lb_target_group" "alb_tg_2" {
-    name = "${var.project_name}-alb-tg-2"
+# resource "aws_lb_target_group" "alb_tg_2" {
+#     name = "${var.project_name}-alb-tg-2"
+#     port =80
+#     protocol = "HTTP"
+#     vpc_id = var.vpc_id
+#     health_check {
+#       path = "/"
+#       protocol ="HTTP"
+#       interval = 30
+#       timeout = 5
+#       matcher = "200-399"
+#       healthy_threshold = 5
+#       unhealthy_threshold = 2
+#     }
+# }
+
+resource "aws_lb_target_group" "clients" {
+    for_each = toset(var.clients)
+    name = "tg-${each.key}"
     port =80
     protocol = "HTTP"
     vpc_id = var.vpc_id
     health_check {
       path = "/"
-      protocol ="HTTP"
+      protocol = "HTTP"
       interval = 30
-      timeout = 5
-      matcher = "200-399"
+      timeout = 30
+      matcher ="200-390"
       healthy_threshold = 5
       unhealthy_threshold = 2
     }

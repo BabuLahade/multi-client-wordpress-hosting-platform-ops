@@ -26,3 +26,14 @@ variable "launch_template_id_2" {
     description = "launch template id"
     type = string
 }
+
+variable "clients" {
+  type = list(string)
+}
+
+variable "launch_template" {
+    type = list(string)
+}
+variable "target_group_arn" {
+    type = list(string)
+}

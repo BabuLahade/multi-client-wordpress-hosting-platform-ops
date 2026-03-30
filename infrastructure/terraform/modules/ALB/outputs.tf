@@ -11,3 +11,6 @@ output "target_group_arn_1" {
 output "target_group_arn_2" {
   value = aws_lb_target_group.alb_tg_2.arn
 }
+output "target_group_arn" {
+  value = aws_lb_target_group.clients[each.key].arn
+}

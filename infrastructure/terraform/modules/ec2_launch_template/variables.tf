@@ -41,3 +41,7 @@ variable "db_instance_address" {
   description = "value"
   type = string
 }
+variable "clients" {
+  description = "value"
+  type = list(string)
+}

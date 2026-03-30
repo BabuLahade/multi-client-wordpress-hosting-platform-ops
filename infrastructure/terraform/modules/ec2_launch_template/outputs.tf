@@ -8,3 +8,6 @@ output "launch_template_id_1"  {
 output "launch_template_id_2" {
     value =aws_launch_template.app_launch_template_2.id
 }
+output "launch_template"{
+    value = aws_launch_template.clients[each.key].id
+}
