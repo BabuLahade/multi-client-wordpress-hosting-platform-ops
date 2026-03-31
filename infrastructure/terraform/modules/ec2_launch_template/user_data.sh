@@ -95,9 +95,9 @@ done
 # update wp-config
 docker exec wordpress-app sh -c "cat >> /var/www/html/wp-config.php <<'EOL'
 
-if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
-    \$_SERVER['HTTPS'] = 'on';
-}
+# if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+#     \$_SERVER['HTTPS'] = 'on';
+# }
 
 define('WP_HOME', 'http://${name}');
 define('WP_SITEURL', 'http://${name}');
