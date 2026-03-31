@@ -92,6 +92,6 @@ output "alb_dns_name" {
 # output "asg_name_2" {
 #   value = module.asg.asg_name_2
 # }
-output "asg_name" {
-    value = module.asg.asg_name
+output "asg_names" {
+    value = module.asg.asg_names
 }

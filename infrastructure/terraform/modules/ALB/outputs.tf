@@ -11,6 +11,8 @@ output "alb_arn" {
 # output "target_group_arn_2" {
 #   value = aws_lb_target_group.alb_tg_2.arn
 # }
-output "target_group_arn" {
-  value = aws_lb_target_group.clients[*].arn
+output "target_group_arns" {
+  value ={
+    for k , v in aws_lb_target_group.clients : k => v.arn 
+    }
 }

@@ -31,9 +31,9 @@ variable "clients" {
   type = list(string)
 }
 
-variable "launch_template" {
-    type = list(string)
+variable "launch_template_ids" {
+    type = map(string)
 }
-variable "target_group_arn" {
-    type = list(string)
+variable "target_group_arns" {
+    type = map(string)
 }

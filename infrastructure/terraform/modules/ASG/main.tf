@@ -28,16 +28,16 @@
 resource "aws_autoscaling_group" "clients" {
   for_each = toset(var.clients)
 
-  name = "$(each.key)-asg"
+  name = "${each.key}-asg"
   desired_capacity= 2
   min_size =1
   max_size = 4
   vpc_zone_identifier = var.private_app_subnet_ids
 
   launch_template {
-    id = var.launch_template[each.key].id
+    id = var.launch_template_ids[each.key]
     version = "$Latest"
   }
 
-  target_group_arns =[var.target_group_arn[each.key].arn]
+  target_group_arns =[var.target_group_arns[each.key]]
 }

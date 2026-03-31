@@ -110,7 +110,7 @@ resource "aws_lb_target_group" "clients" {
       path = "/"
       protocol = "HTTP"
       interval = 30
-      timeout = 30
+      timeout = 5
       matcher ="200-390"
       healthy_threshold = 5
       unhealthy_threshold = 2
@@ -118,14 +118,20 @@ resource "aws_lb_target_group" "clients" {
 }
 
 resource "aws_lb_listener" "alb_listener" {
-    for_each = toset(var.clients)
+    # for_each = toset(var.clients)
     load_balancer_arn = aws_lb.alb.arn
     port = 80
     protocol = "HTTP"
 
     default_action {
-      type = "forward"
-      target_group_arn = aws_lb_target_group.clients[each.key].arn
+      type = "fixed-response"
+
+      fixed_response {
+        status_code = "200"
+        content_type = "text/plain"
+        message_body = "ok"
+      }
+    #   target_group_arns = aws_lb_target_group.clients.arn
     }
 }
 
@@ -174,7 +180,7 @@ resource "aws_lb_listener" "alb_listener" {
 
 resource "aws_lb_listener_rule" "clients"{
     for_each = toset(var.clients)
-    listener_arn = aws_lb_listener.alb_listener[each.key].arn
+    listener_arn = aws_lb_listener.alb_listener.arn
     priority = 100 + index(var.clients, each.key)
       condition {
         host_header {

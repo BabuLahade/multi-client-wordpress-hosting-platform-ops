@@ -173,8 +173,8 @@ module "asg" {
   vpc_id = module.vpc.vpc_id
   private_app_subnet_ids = module.subnet.private_app_subnet_ids
   clients = var.clients
-  launch_template_ids =  module.launch_template.launch_template_ids
-  target_group_arn = module.alb.target_group_arn
+  launch_template_ids=  module.launch_template.launch_template_ids
+  target_group_arns = module.alb.target_group_arns
   # target_group_arn_1 = module.alb.target_group_arn_1
   # target_group_arn_2 = module.alb.target_group_arn_2
   # launch_template_id_1= module.launch_template.launch_template_id_1
