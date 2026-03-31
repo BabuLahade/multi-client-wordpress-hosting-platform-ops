@@ -148,6 +148,7 @@ module "launch_template" {
   ami_id = var.ami_id
   instance_type = var.instance_type
   key_name = var.key_name
+  clients = var.clients
   app_security_group_id = module.security_group.app_security_group_id
   iam_instance_profile_name = module.IAM.iam_instance_profile_name
   # db_instance_endpoint = module.rds.db_instance_endpoint
@@ -161,7 +162,7 @@ module "alb" {
   vpc_id = module.vpc.vpc_id
   public_subnet_ids = module.subnet.public_subnet_ids
   alb_security_group_id = module.security_group.alb_security_group_id
-
+  clients = var.clients
 
 }
 
@@ -171,8 +172,11 @@ module "asg" {
   project_name = var.project_name
   vpc_id = module.vpc.vpc_id
   private_app_subnet_ids = module.subnet.private_app_subnet_ids
-  target_group_arn_1 = module.alb.target_group_arn_1
-  target_group_arn_2 = module.alb.target_group_arn_2
-  launch_template_id_1 = module.launch_template.launch_template_id_1
-  launch_template_id_2 = module.launch_template.launch_template_id_2
+  clients = var.clients
+  launch_template_ids =  module.launch_template.launch_template_ids
+  target_group_arn = module.alb.target_group_arn
+  # target_group_arn_1 = module.alb.target_group_arn_1
+  # target_group_arn_2 = module.alb.target_group_arn_2
+  # launch_template_id_1= module.launch_template.launch_template_id_1
+  # launch_template_id_2 = module.launch_template.launch_template_id_2
 }

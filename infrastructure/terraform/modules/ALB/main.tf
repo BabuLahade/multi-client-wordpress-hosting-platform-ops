@@ -118,13 +118,14 @@ resource "aws_lb_target_group" "clients" {
 }
 
 resource "aws_lb_listener" "alb_listener" {
+    for_each = toset(var.clients)
     load_balancer_arn = aws_lb.alb.arn
     port = 80
     protocol = "HTTP"
 
     default_action {
       type = "forward"
-      target_group_arn = aws_lb_target_group.alb_tg_1.arn
+      target_group_arn = aws_lb_target_group.clients[each.key].arn
     }
 }
 
@@ -139,34 +140,50 @@ resource "aws_lb_listener" "alb_listener" {
 #     }
 # }
 
-resource "aws_lb_listener_rule" "client1" {
-  listener_arn = aws_lb_listener.alb_listener.arn
-  priority     = 10
+# resource "aws_lb_listener_rule" "client1" {
+#   listener_arn = aws_lb_listener.alb_listener.arn
+#   priority     = 10
 
-  condition {
-    host_header {
-      values = ["client1.local"]
+#   condition {
+#     host_header {
+#       values = ["client1.local"]
+#     }
+#   }
+
+#   action {
+#     type             = "forward"
+#     target_group_arn = aws_lb_target_group.alb_tg_1.arn
+#   }
+# }
+
+# resource "aws_lb_listener_rule" "client2" {
+#   listener_arn = aws_lb_listener.alb_listener.arn
+#   priority     = 20
+
+#   condition {
+#     host_header {
+#       values = ["client2.local"]
+#     }
+#   }
+
+#   action {
+#     type             = "forward"
+#     target_group_arn = aws_lb_target_group.alb_tg_2.arn
+#   }
+# }
+
+resource "aws_lb_listener_rule" "clients"{
+    for_each = toset(var.clients)
+    listener_arn = aws_lb_listener.alb_listener[each.key].arn
+    priority = 100 + index(var.clients, each.key)
+      condition {
+        host_header {
+          values = ["${each.key}.local"]
     }
   }
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.alb_tg_1.arn
-  }
-}
-
-resource "aws_lb_listener_rule" "client2" {
-  listener_arn = aws_lb_listener.alb_listener.arn
-  priority     = 20
-
-  condition {
-    host_header {
-      values = ["client2.local"]
-    }
-  }
-
-  action {
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.alb_tg_2.arn
+    target_group_arn = aws_lb_target_group.clients[each.key].arn
   }
 }
