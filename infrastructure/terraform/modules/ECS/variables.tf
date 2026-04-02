@@ -22,7 +22,7 @@ variable "app_security_group_id" {
 }
 variable "target_group_arn" {
   description = "value"
-  type = string
+  type = list(string)
 }
 variable "ecs_task_execution_role_arn" {
   description = "value"

@@ -145,7 +145,7 @@ resource "aws_ecs_service" "clients" {
     
   load_balancer {
     # Note: If you have separate target groups for each client, this might need to be var.target_group_arn[each.key]
-    target_group_arn = var.target_group_arn 
+    target_group_arn = var.target_group_arn[each.key]
     container_name   = "wordpress"
     container_port   = 80
   }
