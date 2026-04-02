@@ -104,8 +104,8 @@ resource "aws_lb_target_group" "clients" {
     for_each = toset(var.clients)
     name = "tg-${each.key}"
     port =80
-    target_type = "ip"    ### for ecs service fargate its added 
     
+
     protocol = "HTTP"
     vpc_id = var.vpc_id
     health_check {
@@ -194,4 +194,31 @@ resource "aws_lb_listener_rule" "clients"{
     type             = "forward"
     target_group_arn = aws_lb_target_group.clients[each.key].arn
   }
+}
+
+resource "aws_lb_target_group" "ecs" {
+    name = "${var.project_name}-tg-ecs"
+    port = 80
+    protocol = "HTTP"
+    vpc_id = var.vpc_id
+    target_type = "ip"
+    health_check {
+      path ="/"
+      protocol = "HTTP"
+      interval = 30
+      timeout = 5
+      healthy_threshold = 2
+      unhealthy_threshold = 5
+      matcher = "200-399"
+    }
+}
+
+resource "aws_lb_listener" "listener" {
+    load_balancer_arn = aws_lb.alb.arn
+    port = 8080
+    protocol = "HTTP"
+    default_action {
+      type = "forward"
+      target_group_arn = aws_lb_target_group.ecs.arn
+    }
 }
