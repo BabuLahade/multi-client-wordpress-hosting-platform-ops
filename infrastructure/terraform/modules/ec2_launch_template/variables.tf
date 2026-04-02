@@ -41,7 +41,7 @@ variable "db_instance_address" {
   description = "value"
   type = string
 }
-variable "clients" {
+variable "ec2_clients" {
   description = "value"
   type = list(string)
 }

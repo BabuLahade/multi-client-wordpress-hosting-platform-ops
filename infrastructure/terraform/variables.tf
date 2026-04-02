@@ -118,7 +118,11 @@ variable "db_name" {
 # }
 
 
-variable "clients" {
+variable "ec2_clients" {
   description = "List of clients for the WordPress hosting platform"
+  type        = list(string)
+}
+variable "ecs_clients" {
+  description = "List of clients for the ECS hosting platform"
   type        = list(string)
 }

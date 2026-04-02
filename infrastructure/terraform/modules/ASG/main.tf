@@ -26,7 +26,7 @@
 # }
 
 resource "aws_autoscaling_group" "clients" {
-  for_each = toset(var.clients)
+  for_each = toset(var.ec2_clients)
 
   name = "${each.key}-asg"
   desired_capacity= 2

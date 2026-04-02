@@ -51,4 +51,5 @@ db_engine_version = "8.0"
 db_username = "admin"
 db_password = "StrongPassword123!"
 db_name = "wordpress"
-clients =["client1","client2"]
+ec2_clients =["client1","client2"]
+ecs_clients = ["client1","client2"]

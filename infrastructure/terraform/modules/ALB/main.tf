@@ -101,7 +101,7 @@ resource "aws_lb" "alb" {
 # }
 
 resource "aws_lb_target_group" "clients" {
-    for_each = toset(var.clients)
+    for_each = toset(var.ec2_clients)
     name = "tg-${each.key}"
     port =80
     
@@ -116,6 +116,25 @@ resource "aws_lb_target_group" "clients" {
       matcher ="200-390"
       healthy_threshold = 5
       unhealthy_threshold = 2
+    }
+}
+resource "aws_lb_target_group" "client1_tg_ecs" {
+    for_each = toset(var.ecs_clients)
+
+    name = "${var.project_name}-tg-ecs"
+
+    port = 80
+    protocol = "HTTP"
+    vpc_id = var.vpc_id
+    target_type = "ip"
+    health_check {
+      path ="/"
+      protocol = "HTTP"
+      interval = 30
+      timeout = 5
+      healthy_threshold = 2
+      unhealthy_threshold = 5
+      matcher = "200-399"
     }
 }
 
@@ -181,9 +200,9 @@ resource "aws_lb_listener" "alb_listener" {
 # }
 
 resource "aws_lb_listener_rule" "clients"{
-    for_each = toset(var.clients)
+    for_each = toset(var.ec2_clients)
     listener_arn = aws_lb_listener.alb_listener.arn
-    priority = 100 + index(var.clients, each.key)
+    priority = 100 + index(var.ec2_clients, each.key)
       condition {
         host_header {
           values = ["${each.key}.local"]
@@ -195,30 +214,31 @@ resource "aws_lb_listener_rule" "clients"{
     target_group_arn = aws_lb_target_group.clients[each.key].arn
   }
 }
-
-resource "aws_lb_target_group" "ecs" {
-    name = "${var.project_name}-tg-ecs"
-    port = 80
-    protocol = "HTTP"
-    vpc_id = var.vpc_id
-    target_type = "ip"
-    health_check {
-      path ="/"
-      protocol = "HTTP"
-      interval = 30
-      timeout = 5
-      healthy_threshold = 2
-      unhealthy_threshold = 5
-      matcher = "200-399"
+##listener rule for ecs service
+resource "aws_lb_listener_rule" "ecs_clients" {
+    for_each = toset(var.ecs_clients)
+    listener_arn = aws_lb_listener.alb_listener.arn
+    priority = 200 + index(var.ecs_clients, each.key)
+      condition {
+        host_header {
+          values = ["${each.key}-ecs.local"]
     }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.client1_tg_ecs[each.key].arn
+  }
 }
 
-resource "aws_lb_listener" "listener" {
-    load_balancer_arn = aws_lb.alb.arn
-    port = 8080
-    protocol = "HTTP"
-    default_action {
-      type = "forward"
-      target_group_arn = aws_lb_target_group.ecs.arn
-    }
-}
+
+#   Creating error because of same port 80 in listener, you can change the port to 8080 or any other port which is not in use
+# resource "aws_lb_listener" "listener" {
+#     load_balancer_arn = aws_lb.alb.arn
+#     port = 8080
+#     protocol = "HTTP"
+#     default_action {
+#       type = "forward"
+#       target_group_arn = aws_lb_target_group.ecs.arn
+#     }
+# }

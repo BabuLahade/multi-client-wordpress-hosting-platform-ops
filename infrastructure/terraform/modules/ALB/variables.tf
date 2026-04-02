@@ -10,6 +10,9 @@ variable "alb_security_group_id" {
 variable "vpc_id" {
   type = string
 }
-variable "clients"{
+variable "ec2_clients"{
   type =list(string)
+}
+variable "ecs_clients" {
+  type = list(string)
 }

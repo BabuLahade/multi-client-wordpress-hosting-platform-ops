@@ -28,3 +28,8 @@ variable "ecs_task_execution_role_arn" {
   description = "value"
   type = string
 }
+
+variable "ecs_clients" {
+  description = "value"
+  type = list(string)
+}

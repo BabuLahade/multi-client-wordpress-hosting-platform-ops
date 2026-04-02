@@ -27,7 +27,7 @@ variable "private_app_subnet_ids" {
 #     type = string
 # }
 
-variable "clients" {
+variable "ec2_clients" {
   type = list(string)
 }
 

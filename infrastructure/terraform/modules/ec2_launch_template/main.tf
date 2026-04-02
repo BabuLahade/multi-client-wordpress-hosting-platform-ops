@@ -137,7 +137,7 @@
 
 
 resource "aws_launch_template" "clients" {
-    for_each =toset(var.clients)
+    for_each =toset(var.ec2_clients)
     name_prefix = "${each.key}-lt"
     image_id = var.ami_id
     instance_type = var.instance_type

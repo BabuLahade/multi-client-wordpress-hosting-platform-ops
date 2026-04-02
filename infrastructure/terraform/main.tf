@@ -148,7 +148,7 @@ module "launch_template" {
   ami_id = var.ami_id
   instance_type = var.instance_type
   key_name = var.key_name
-  clients = var.clients
+  ec2_clients = var.ec2_clients
   app_security_group_id = module.security_group.app_security_group_id
   iam_instance_profile_name = module.IAM.iam_instance_profile_name
   # db_instance_endpoint = module.rds.db_instance_endpoint
@@ -162,7 +162,8 @@ module "alb" {
   vpc_id = module.vpc.vpc_id
   public_subnet_ids = module.subnet.public_subnet_ids
   alb_security_group_id = module.security_group.alb_security_group_id
-  clients = var.clients
+  ec2_clients = var.ec2_clients
+  ecs_clients = var.ecs_clients
 
 }
 
@@ -172,7 +173,8 @@ module "asg" {
   project_name = var.project_name
   vpc_id = module.vpc.vpc_id
   private_app_subnet_ids = module.subnet.private_app_subnet_ids
-  clients = var.clients
+  ec2_clients = var.ec2_clients
+
   launch_template_ids=  module.launch_template.launch_template_ids
   target_group_arns = module.alb.target_group_arns
   # target_group_arn_1 = module.alb.target_group_arn_1
@@ -183,6 +185,7 @@ module "asg" {
 module "ECS" {
   source = "./modules/ECS"
   project_name = var.project_name
+  ecs_clients = var.ecs_clients
   private_app_subnet_ids = module.subnet.private_app_subnet_ids
   app_security_group_id =  module.security_group.app_security_group_id
   ecs_task_execution_role_arn = module.IAM.ecs_task_execution_role_arn
