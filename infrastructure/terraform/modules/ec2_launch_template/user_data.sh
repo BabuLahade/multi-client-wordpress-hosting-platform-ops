@@ -87,10 +87,10 @@ EOF
 docker-compose up -d
 
 
-# wait for container
-until docker exec wordpress-app ls /var/www/html >/dev/null 2>&1; do
-  sleep 5
-done
+# # wait for container
+# until docker exec wordpress-app ls /var/www/html >/dev/null 2>&1; do
+#   sleep 5
+# done
 
 # update wp-config
 # docker exec wordpress-app sh -c "cat >> /var/www/html/wp-config.php <<'EOL'
@@ -98,11 +98,13 @@ done
 # # if (isset(\$_SERVER['HTTP_X_FORWARDED_PROTO']) && \$_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
 # #     \$_SERVER['HTTPS'] = 'on';
 # # }
-docker exec wordpress-app sh -c "cat >> /var/www/html/wp-config.php <<'EOL'
-define('WP_HOME', 'http://${name}');
-define('WP_SITEURL', 'http://${name}');
 
-EOL"
+# throwing error 
+# docker exec wordpress-app sh -c "cat >> /var/www/html/wp-config.php <<'EOL'
+# define('WP_HOME', 'http://${name}');
+# define('WP_SITEURL', 'http://${name}');
+
+# EOL"
 # docker exec -it wordpress-app bash 
 
 # cat <<EOF >> /var/www/html/wp-config.php

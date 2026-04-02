@@ -180,3 +180,13 @@ module "asg" {
   # launch_template_id_1= module.launch_template.launch_template_id_1
   # launch_template_id_2 = module.launch_template.launch_template_id_2
 }
+module "ECS" {
+  source = "./modules/ECS"
+  project_name = var.project_name
+  private_app_subnet_ids = module.subnet.private_app_subnet_ids
+  app_security_group_id =  module.security_group.app_security_group_id
+  ecs_task_execution_role_arn = module.IAM.ecs_task_execution_role_arn
+  db_endpoint = module.rds.db_instance_address 
+  db_name = var.db_name
+  target_group_arn = module.alb.target_group_arns["client1"]
+}

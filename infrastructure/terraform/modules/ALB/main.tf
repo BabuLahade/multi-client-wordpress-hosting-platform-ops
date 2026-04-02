@@ -104,6 +104,8 @@ resource "aws_lb_target_group" "clients" {
     for_each = toset(var.clients)
     name = "tg-${each.key}"
     port =80
+    target_type = "ip"    ### for ecs service fargate its added 
+    
     protocol = "HTTP"
     vpc_id = var.vpc_id
     health_check {
