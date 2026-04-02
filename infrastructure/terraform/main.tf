@@ -188,5 +188,5 @@ module "ECS" {
   ecs_task_execution_role_arn = module.IAM.ecs_task_execution_role_arn
   db_endpoint = module.rds.db_instance_address 
   db_name = var.db_name
-  target_group_arn = module.alb.target_group_arns["client1"]
+  target_group_arn = module.alb.target_group_arn
 }

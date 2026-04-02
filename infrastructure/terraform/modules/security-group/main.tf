@@ -16,11 +16,11 @@ resource "aws_security_group" "alb_sg" {
 
     }
     ingress {
-        from_port = 22
-        to_port = 22
+        from_port = 8080
+        to_port = 8080
         protocol = "tcp"
         cidr_blocks = ["0.0.0.0/0"]
-        description = "Allow SSH access for management"
+        
     }
     egress {
         from_port = 0

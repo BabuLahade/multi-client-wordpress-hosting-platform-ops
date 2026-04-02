@@ -16,3 +16,6 @@ output "target_group_arns" {
     for k , v in aws_lb_target_group.clients : k => v.arn 
     }
 }
+output "target_group_arn" {
+  value =aws_lb_target_group.ecs.arn
+}
