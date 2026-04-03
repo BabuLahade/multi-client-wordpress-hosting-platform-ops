@@ -121,14 +121,14 @@ resource "aws_lb_target_group" "clients" {
 resource "aws_lb_target_group" "client1_tg_ecs" {
     for_each = toset(var.ecs_clients)
 
-    name = "${var.project_name}-tg-ecs"
+    name = "${each.key}-tg-ecs"
 
     port = 80
     protocol = "HTTP"
     vpc_id = var.vpc_id
     target_type = "ip"
     health_check {
-      path ="/"
+      path ="/health"
       protocol = "HTTP"
       interval = 30
       timeout = 5
