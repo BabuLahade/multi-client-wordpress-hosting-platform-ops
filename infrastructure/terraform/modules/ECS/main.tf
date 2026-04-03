@@ -348,11 +348,42 @@ resource "aws_ecs_task_definition" "clients" {
 
 #   
 container_definitions = jsonencode([
+
+  #  i want to add database per client auto matically 
+  {
+    name = "db-init"
+    image = "mysql:8.0"
+    essential = false
+
+    environment = [
+      { name = "MYSQL_PWD", value = "StrongPassword123!" },
+    
+    ]
+    command =[
+      "sh" , "-c" ,
+      mysql -h ${var.db_endpoint} -u admin -e "CREATE DATABASE IF NOT EXISTS wp_${each.key};"
+    ]
+    logConfiguration = {
+      logDriver ="awslogs"
+      options = {
+        awslogs-group = aws_cloudwatch_log_group.wordpress_logs[each.key].name
+        awslogs-region = "eu-north-1"
+        awslogs-stream-prefix ="ecs-db-init"
+      }
+    }
+
+  },
   {
     name      = "wordpress"
     image     = "wordpress:fpm"
     essential = true
 
+    depends_on =[
+      {
+        container_name = "db-init"
+        condition = "SUCCESS"
+      }
+    ]
     mountPoints = [
       {
         sourceVolume  = "wordpress-files"
@@ -362,10 +393,10 @@ container_definitions = jsonencode([
     # NO portMappings (important)
 
     environment = [
-      { name = "WORDPRESS_DB_HOST", value = "${var.db_endpoint}:3306" },
+      { name = "WORDPRESS_DB_HOST", value = "${var.db_endpoint}" },
       { name = "WORDPRESS_DB_USER", value = "admin" },
       { name = "WORDPRESS_DB_PASSWORD", value = "StrongPassword123!" },
-      { name = "WORDPRESS_DB_NAME", value = "wp_${each.key}" }
+      { name = "WORDPRESS_DB_NAME", value = "wordpress" }
     ]
 
     logConfiguration = {
@@ -383,6 +414,12 @@ container_definitions = jsonencode([
     image     = "nginx:latest"
     essential = true
 
+    depends_on =[
+      {
+        container_name = "wordpress"
+        condition = "START"
+      }
+    ]
     portMappings = [
       {
         containerPort = 80
@@ -396,8 +433,7 @@ container_definitions = jsonencode([
       }
     ]
     
-    # FIX: Flattened into a single safe string. 
-    # FIX: Restored fastcgi_pass to port 9000 so it actually talks to the wordpress:fpm container.
+    #  added fastcgi_pass to port 9000 so it connect to  wordpress:fpm container.
     command = [
       "/bin/sh", "-c",
       "echo 'server { listen 80; root /var/www/html; index index.php; location /health { access_log off; return 200 \"healthy\"; } location / { try_files $uri $uri/ /index.php?$args; } location ~ \\.php$ { fastcgi_pass 127.0.0.1:9000; fastcgi_index index.php; fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; include fastcgi_params; } }' > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
