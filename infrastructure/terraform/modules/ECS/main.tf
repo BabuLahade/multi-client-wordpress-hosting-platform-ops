@@ -361,8 +361,8 @@ container_definitions = jsonencode([
     ]
     command =[
       "sh" , "-c" ,
-      mysql -h ${var.db_endpoint} -u admin -e "CREATE DATABASE IF NOT EXISTS wp_${each.key};"
-    ]
+      "mysql -h ${var.db_endpoint} -u admin -e 'CREATE DATABASE IF NOT EXISTS wp_${each.key};'"
+    ]   
     logConfiguration = {
       logDriver ="awslogs"
       options = {

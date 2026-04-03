@@ -52,4 +52,4 @@ db_username = "admin"
 db_password = "StrongPassword123!"
 db_name = "wordpress"
 ec2_clients =["client1","client2"]
-ecs_clients = ["client3"]
+ecs_clients = ["client3","client4"]
