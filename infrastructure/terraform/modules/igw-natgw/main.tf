@@ -6,18 +6,21 @@ resource "aws_internet_gateway" "igw" {
 }
 
 resource "aws_eip" "natgw_eip" {
-    count = length(var.private_app_subnet_ids)
+    for_each = var.public_subnet_ids
+    # count = length(var.private_app_subnet_ids)
     domain = "vpc"
     tags = {
-        Name = "${var.project_name}-natgw-eip-${count.index + 1}"
+        Name = "${var.project_name}-natgw-eip-${each.key}"
     }
 }
 
 resource "aws_nat_gateway" "natgw" {
-    count =length(var.public_subnet_ids)
-    subnet_id = var.public_subnet_ids[count.index]
-    allocation_id = aws_eip.natgw_eip[count.index].id
+        for_each = var.public_subnet_ids
+    # count =length(var.public_subnet_ids)
+    subnet_id = each.value
+    allocation_id = aws_eip.natgw_eip[each.key].id
     tags = {
-        Name = "${var.project_name}-natgw-${count.index +1}"
+        Name = "${var.project_name}-natgw-${each.key}"
     }
+    depends_on = [aws_internet_gateway.igw]
 }

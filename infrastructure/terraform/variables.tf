@@ -48,21 +48,21 @@ variable "vpc_cidr" {
   type        = string
 }
 
-variable "availability_zones" {
-  description = "List of availability zones"
-  type        = list(string)
-}
+# variable "availability_zones" {
+#   description = "List of availability zones"
+#   type        = list(string)
+# }
 variable "public_subnet_cidrs" {
   description = "CIDR blocks for public subnets"
-  type        = list(string)
+  type        = map(string)
 }
 variable "private_app_subnet_cidrs" {
   description = "CIDR blocks for private application subnets"
-  type        = list(string)
+  type        = map(string)
 }
 variable "private_db_subnet_cidrs" {
   description = "CIDR blocks for private database subnets"
-  type        = list(string)
+  type        = map(string)
 }
 variable "ami_id" {
   description = "AMI ID for EC2 instances"

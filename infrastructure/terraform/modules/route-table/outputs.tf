@@ -3,5 +3,7 @@ output "public_route_table_id" {
 }
 
 output "private_route_table_ids" {
-  value = aws_route_table.private_rt[*].id
+  value = {
+    for k, v in aws_route_table.private_rt : k => v.id
+  }
 }

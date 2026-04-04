@@ -8,20 +8,20 @@ variable "project_name" {
 }
 
 variable "public_subnet_id" {
-  type        = list(string)
+  type        = map(string)
   description = "Public subnet where NAT gateway will be deployed"
 }
-variable "availability_zones" {
-  type        = list(string)
-  description = "Availability zones for the NAT gateway"
-}
+# variable "availability_zones" {
+#   type        = list(string)
+#   description = "Availability zones for the NAT gateway"
+# }
 variable "private_app_subnet_ids" {
-  type        = list(string)
+  type        = map(string)
   description = "List of private application subnet IDs to associate with the route table"
 }
 variable "public_subnet_cidrs" {
-  type = list(string)
+  type = map(string)
 }
 variable "public_subnet_ids" {
-  type = list(string)
+  type = map(string)
 }   

@@ -13,20 +13,20 @@ variable "vpc_cidr" {
 }
 variable "public_subnet_cidrs" {
     description = "CIDR block for the public subnet"
-    type        = list(string)
+    type        = map(string)
 }
 variable "private_app_subnet_cidrs" {
     description = "CIDR block for the private application subnet"
-    type        = list(string)
+    type        = map(string)
 }
 variable "private_db_subnet_cidrs" {
     description = "CIDR block for the private database subnet"
-    type        = list(string)
+    type        = map(string)
 }
-variable "availability_zones" {
-    description = "Availability zones for the subnets"
-    type        = list(string)
-}
+# variable "availability_zones" {
+#     description = "Availability zones for the subnets"
+#     type        = list(string)
+# }
 # variable "public_subnet_ids" {
 #     description = "List of public subnet IDs to associate with the route table"
 #     type        = list(string)

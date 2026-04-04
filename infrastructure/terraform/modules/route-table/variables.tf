@@ -5,11 +5,11 @@ variable "project_name" {
 
 variable "private_app_subnet_ids" {
   description = "value"
-  type = list(string)
+  type = map(string)
 }
 variable "public_subnet_ids" {
   description = "value"
-  type = list(string)
+  type = map(string)
 }
 variable "vpc_id" {
   description = "VPC ID for route table"
@@ -22,9 +22,9 @@ variable "igw_id" {
 }
 variable "natgw_ids" {
   description = "List of NAT Gateway IDs to route traffic from private subnets to the internet"
-  type        = list(string)
+  type        = map(string)
 }
 variable "private_db_subnet_ids" {
   description = "List of private database subnet IDs to associate with the route table"
-  type        = list(string)      
+  type        = map(string)      
 }

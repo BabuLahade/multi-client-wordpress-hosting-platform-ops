@@ -42,5 +42,5 @@ variable "db_security_group_id" {
 # }
 variable "private_db_subnet_ids" {
   description = "List of subnet IDs for the DB subnet group"
-  type        = list(string)
+  type        = map(string)
 }
