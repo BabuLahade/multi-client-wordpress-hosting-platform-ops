@@ -32,7 +32,7 @@ resource "aws_autoscaling_group" "clients" {
   desired_capacity= 2
   min_size =1
   max_size = 4
-  vpc_zone_identifier = var.private_app_subnet_ids
+  vpc_zone_identifier = values(var.private_app_subnet_ids)
 
   launch_template {
     id = var.launch_template_ids[each.key]

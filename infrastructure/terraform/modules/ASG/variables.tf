@@ -8,7 +8,7 @@ variable "vpc_id" {
 }
 variable "private_app_subnet_ids" {
     description = "List of private subnet IDs for application instances"
-    type        = list(string)
+    type        = map(string)
 }
 # variable "target_group_arn_1" {
 #     description = "value"

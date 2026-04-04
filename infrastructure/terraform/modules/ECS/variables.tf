@@ -14,7 +14,7 @@ variable "db_name" {
 
 variable "private_app_subnet_ids" {
   description = "value"
-  type = list(string)
+  type = map(string)
 }
 variable "app_security_group_id" {
   description = "value"

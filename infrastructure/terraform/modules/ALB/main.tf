@@ -59,7 +59,7 @@ resource "aws_lb" "alb" {
     name = "${var.project_name}-alb"
     load_balancer_type = "application"
     internal = false
-    subnets = var.public_subnet_ids
+    subnets = values(var.public_subnet_ids)
     security_groups = [var.alb_security_group_id]
     tags = {
         Name = "${var.project_name}-alb"

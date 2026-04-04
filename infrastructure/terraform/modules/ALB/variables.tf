@@ -2,7 +2,7 @@ variable "project_name" {
   type = string
 }
 variable "public_subnet_ids" {
-  type = list(string)
+  type = map(string)
 }
 variable "alb_security_group_id" {
   type = string
