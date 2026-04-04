@@ -182,6 +182,12 @@ module "asg" {
   # launch_template_id_1= module.launch_template.launch_template_id_1
   # launch_template_id_2 = module.launch_template.launch_template_id_2
 }
+module "efs" {
+  source= "./modules/EFS"
+  project_name = var.project_name
+  private_app_subnet_ids = module.subnet.private_app_subnet_ids
+  efs_security_group_id = module.security_group.efs_security_group_id
+}
 module "ECS" {
   source = "./modules/ECS"
   project_name = var.project_name
@@ -192,4 +198,5 @@ module "ECS" {
   db_endpoint = module.rds.db_instance_address 
   db_name = var.db_name
   target_group_arn = module.alb.target_group_arn
+  efs_file_system_id = module.efs.efs_file_system_id
 }

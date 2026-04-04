@@ -344,6 +344,10 @@ resource "aws_ecs_task_definition" "clients" {
   # CREATE THE SHARED VOLUME FOR FPM AND NGINX
   volume {
     name = "wordpress-files"
+    efs_volume_configuration {
+      file_system_id = var.efs_file_system_id
+      transit_encryption = "ENABLED"
+    }
   }
 
 #   
@@ -387,7 +391,7 @@ container_definitions = jsonencode([
     mountPoints = [
       {
         sourceVolume  = "wordpress-files"
-        containerPath = "/var/www/html"
+        containerPath = "/var/www/html/wp-content"
       }
     ]
     # NO portMappings (important)
@@ -429,7 +433,7 @@ container_definitions = jsonencode([
     mountPoints = [
       {
         sourceVolume  = "wordpress-files"
-        containerPath = "/var/www/html"
+        containerPath = "/var/www/html/wp-content"
       }
     ]
     

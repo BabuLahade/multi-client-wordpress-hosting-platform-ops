@@ -33,3 +33,7 @@ variable "ecs_clients" {
   description = "value"
   type = list(string)
 }
+variable "efs_file_system_id" {
+  description = "value"
+  type = string
+}
