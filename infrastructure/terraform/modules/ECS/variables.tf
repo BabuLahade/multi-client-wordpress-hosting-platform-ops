@@ -37,3 +37,11 @@ variable "efs_file_system_id" {
   description = "value"
   type = string
 }
+variable "ecs_task_role_arn" {
+  description = "value"
+  type = string
+}
+variable "db_secret_arn" {
+  description = "value"
+  type = string 
+}

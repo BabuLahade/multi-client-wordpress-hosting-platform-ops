@@ -121,7 +121,10 @@ module "s3" {
   source = "./modules/s3"
   project_name = var.project_name
 }
-
+module "secretsmanager" {
+  source = "./modules/secretesmanager"
+  project_name = var.project_name
+}
 
 module "rds" { 
   source = "./modules/RDS"
@@ -131,7 +134,7 @@ module "rds" {
   db_engine = var.db_engine
   db_engine_version = var.db_engine_version
   db_username = var.db_username
-  db_password = var.db_password
+  secret_db_password = module.secretsmanager.secret_db_password
   db_name = var.db_name
   private_db_subnet_ids = module.subnet.private_db_subnet_ids
   db_security_group_id = module.security_group.db_security_group_id
@@ -195,8 +198,10 @@ module "ECS" {
   private_app_subnet_ids = module.subnet.private_app_subnet_ids
   app_security_group_id =  module.security_group.app_security_group_id
   ecs_task_execution_role_arn = module.IAM.ecs_task_execution_role_arn
+  ecs_task_role_arn = module.IAM.ecs_task_role_arn
   db_endpoint = module.rds.db_instance_address 
   db_name = var.db_name
+  db_secret_arn = module.secretsmanager.db_secret_arn
   target_group_arn = module.alb.target_group_arn
   efs_file_system_id = module.efs.efs_file_system_id
 }

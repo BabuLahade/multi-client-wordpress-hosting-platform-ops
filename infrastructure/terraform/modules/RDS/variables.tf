@@ -22,11 +22,11 @@ variable "db_username" {
     description = "the master username for the database"
     type        = string    
 }
-variable "db_password" {
-  description = "the master password for the database"
-  type        = string
-  sensitive = true
-}
+# variable "db_password" {
+#   description = "the master password for the database"
+#   type        = string
+#   sensitive = true
+# }
 variable "db_name" {
   description = "the name of the database to create"
   type        = string
@@ -43,4 +43,9 @@ variable "db_security_group_id" {
 variable "private_db_subnet_ids" {
   description = "List of subnet IDs for the DB subnet group"
   type        = map(string)
+}
+variable "secret_db_password" {
+  description = "the master password for the database from Secrets Manager"
+  type        = string
+  sensitive = true
 }

@@ -531,7 +531,7 @@ resource "aws_ecs_task_definition" "clients" {
   cpu                      = "256"
   memory                   = "512"
   execution_role_arn       = var.ecs_task_execution_role_arn 
-  enable_execute_command = true 
+  task_role_arn = var.ecs_task_role_arn
   # FIXED: Mount the Access Point, not the root drive
   volume {
     name = "wordpress-files"
@@ -550,8 +550,8 @@ resource "aws_ecs_task_definition" "clients" {
       name      = "db-init"
       image     = "mysql:8.0"
       essential = false
-      environment = [
-        { name = "MYSQL_PWD", value = "StrongPassword123!" },
+      secrets = [
+        { name = "MYSQL_PWD", value =var.db_secret_arn },
       ]
       command = [
         "sh" , "-c" ,
@@ -588,8 +588,11 @@ resource "aws_ecs_task_definition" "clients" {
       environment = [
         { name = "WORDPRESS_DB_HOST", value = "${var.db_endpoint}" },
         { name = "WORDPRESS_DB_USER", value = "admin" },
-        { name = "WORDPRESS_DB_PASSWORD", value = "StrongPassword123!" },
+         
         { name = "WORDPRESS_DB_NAME", value = "wp_${each.key}" }
+      ]
+      secrets = [
+        { name = "WORDPRESS_DB_PASSWORD", value = var.db_secret_arn }
       ]
       logConfiguration = {
         logDriver = "awslogs"
@@ -647,6 +650,7 @@ resource "aws_ecs_service" "clients" {
   task_definition = aws_ecs_task_definition.clients[each.key].arn 
   desired_count   = 1
   launch_type     = "FARGATE"
+  enable_execute_command = true
   health_check_grace_period_seconds = 60
   network_configuration {
     subnets          = values(var.private_app_subnet_ids)

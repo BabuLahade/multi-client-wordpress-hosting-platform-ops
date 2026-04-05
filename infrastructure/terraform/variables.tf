@@ -98,11 +98,11 @@ variable "db_username" {
     type        = string    
     sensitive = true
 }
-variable "db_password" {
-  description = "the master password for the database"
-  type        = string
-  sensitive = true
-}
+# variable "db_password" {
+#   description = "the master password for the database"
+#   type        = string
+#   sensitive = true
+# }
 variable "db_name" {
   description = "the name of the database to create"
   type        = string
