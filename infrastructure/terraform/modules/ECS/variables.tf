@@ -45,3 +45,7 @@ variable "db_secret_arn" {
   description = "value"
   type = string 
 }
+variable "valkey_endpoint" {
+  description = "The endpoint URL for the Valkey caching cluster"
+  type        = string
+}

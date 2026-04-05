@@ -589,7 +589,11 @@ resource "aws_ecs_task_definition" "clients" {
         { name = "WORDPRESS_DB_HOST", value = "${var.db_endpoint}" },
         { name = "WORDPRESS_DB_USER", value = "admin" },
          
-        { name = "WORDPRESS_DB_NAME", value = "wp_${each.key}" }
+        { name = "WORDPRESS_DB_NAME", value = "wp_${each.key}" },
+
+        # valkey
+        { name = "REDIS_HOST", value = var.valkey_endpoint },
+        { name = "REDIS_PPORT" , value = "6379" }
       ]
       secrets = [
         { name = "WORDPRESS_DB_PASSWORD", value = var.db_secret_arn }

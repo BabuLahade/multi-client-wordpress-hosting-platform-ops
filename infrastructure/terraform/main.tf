@@ -192,6 +192,12 @@ module "efs" {
   private_app_subnet_ids = module.subnet.private_app_subnet_ids
   efs_security_group_id = module.security_group.efs_security_group_id
 }
+module "redis"{
+  source = "./modules/Redis"
+  project_name = var.project_name
+  private_db_subnet_ids = module.subnet.private_db_subnet_ids
+  redis_security_group_id = module.security_group.redis_security_group_id
+}
 module "ECS" {
   source = "./modules/ECS"
   project_name = var.project_name
@@ -205,4 +211,5 @@ module "ECS" {
   db_secret_arn = module.secretsmanager.db_secret_arn
   target_group_arn = module.alb.target_group_arn
   efs_file_system_id = module.efs.efs_file_system_id
+  valkey_endpoint = module.redis.valkey_endpoint
 }
