@@ -143,6 +143,7 @@ module "rds" {
 module "IAM" {
   source = "./modules/IAM"
   project_name = var.project_name
+  media_bucket_arn = module.s3.media_bucket_arn
 }
 module "launch_template" {
   source = "./modules/ec2_launch_template"
