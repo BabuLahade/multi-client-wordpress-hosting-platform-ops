@@ -200,6 +200,12 @@ module "redis"{
   private_db_subnet_ids = module.subnet.private_db_subnet_ids
   redis_security_group_id = module.security_group.redis_security_group_id
 }
+
+module "ECR" {
+  source = "./modules/ECR"
+  project_name = var.project_name
+}
+
 module "ECS" {
   source = "./modules/ECS"
   project_name = var.project_name
