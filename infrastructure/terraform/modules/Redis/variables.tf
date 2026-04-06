@@ -8,6 +8,6 @@ variable "private_db_subnet_ids" {
 }
 variable "redis_security_group_id" {
     description = "value"
-    type = value 
-    
+    type = string
+
 }

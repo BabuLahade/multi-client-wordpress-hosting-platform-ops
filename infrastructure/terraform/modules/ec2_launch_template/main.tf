@@ -154,6 +154,7 @@ resource "aws_launch_template" "clients" {
         templatefile("${path.module}/user_data.sh", {
             db_endpoint = var.db_instance_address
             db_name = "wp_${each.key}"
+            db_password = var.db_secret_arn
             name = "${each.key}.local"
         })
     )

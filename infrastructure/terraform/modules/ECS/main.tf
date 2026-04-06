@@ -551,7 +551,7 @@ resource "aws_ecs_task_definition" "clients" {
       image     = "mysql:8.0"
       essential = false
       secrets = [
-        { name = "MYSQL_PWD", value =var.db_secret_arn },
+        { name = "MYSQL_PWD", valueFrom = var.db_secret_arn },
       ]
       command = [
         "sh" , "-c" ,
@@ -593,10 +593,10 @@ resource "aws_ecs_task_definition" "clients" {
 
         # valkey
         { name = "REDIS_HOST", value = var.valkey_endpoint },
-        { name = "REDIS_PPORT" , value = "6379" }
+        { name = "REDIS_PORT" , value = "6379" }
       ]
       secrets = [
-        { name = "WORDPRESS_DB_PASSWORD", value = var.db_secret_arn }
+        { name = "WORDPRESS_DB_PASSWORD", valueFrom = var.db_secret_arn }
       ]
       logConfiguration = {
         logDriver = "awslogs"

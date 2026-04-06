@@ -98,7 +98,31 @@ resource "aws_iam_policy" "ecs_exec_policy" {
         }]
     })
 }
+resource "aws_iam_role_policy" "s3_offload_policy" {
+    name ="${var.project_name}-s3-offload-policy"
+    role = aws_iam_role.ecs_task_role.id
+    policy =jsonencode({
+        Version = "2012-10-17"
+        Statement = [{
+            Effect = "Allow"
+            Action = [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:ListBucket",
+                "s3:GetBucketLocation",
+                "s3:DeleteObject"
 
+            ]
+            Resource = [
+                var.media_bucket_arn,
+                "${var.media_bucket_arn}/*"  ,
+                # ADDED: The legacy format the WordPress plugin is asking for!
+                "arn:aws:s3:::${var.project_name}-media-*",  
+                "arn:aws:s3:::${var.project_name}-media-*/*"
+            ]
+        }]
+    })
+}
 resource "aws_iam_role_policy_attachment" "ecs_task_role_policy_attachment" {
     role = aws_iam_role.ecs_task_role.name
     policy_arn = aws_iam_policy.ecs_exec_policy.arn

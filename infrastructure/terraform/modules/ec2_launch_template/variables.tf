@@ -45,3 +45,7 @@ variable "ec2_clients" {
   description = "value"
   type = list(string)
 }
+variable "db_secret_arn" {
+  description = "value"
+  type = string
+}

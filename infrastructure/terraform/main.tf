@@ -157,6 +157,8 @@ module "launch_template" {
   iam_instance_profile_name = module.IAM.iam_instance_profile_name
   # db_instance_endpoint = module.rds.db_instance_endpoint
   db_instance_address = module.rds.db_instance_address
+  db_secret_arn = module.secretsmanager.db_secret_arn 
+  
 }
 
 module "alb" {
