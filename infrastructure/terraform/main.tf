@@ -222,3 +222,9 @@ module "ECS" {
   valkey_endpoint = module.redis.valkey_endpoint
   custom_wordpress_image = "${module.ECR.repository_url}:latest"
 }
+
+
+module "Route53" {
+  source = "./modules/Route53"
+  domain_name = var.domain_name
+}

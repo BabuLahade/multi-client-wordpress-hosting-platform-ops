@@ -100,3 +100,9 @@ output "repository_url" {
     value = module.ECR.repository_url
     description = "URL of the ECR repository"
 }
+
+output "nameservers" {
+    value = module.Route53.nameservers
+    description = "The nameservers for the Route53 hosted zone"
+  
+}
