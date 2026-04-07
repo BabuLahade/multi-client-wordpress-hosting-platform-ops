@@ -568,7 +568,7 @@ resource "aws_ecs_task_definition" "clients" {
     },
     {
       name      = "wordpress"
-      image     = "wordpress:fpm"
+      image     = var.custom_wordpress_image
       essential = true
       depends_on = [
         {

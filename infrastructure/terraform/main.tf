@@ -220,4 +220,5 @@ module "ECS" {
   target_group_arn = module.alb.target_group_arn
   efs_file_system_id = module.efs.efs_file_system_id
   valkey_endpoint = module.redis.valkey_endpoint
+  custom_wordpress_image = "${module.ECR.repository_url}:latest"
 }

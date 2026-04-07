@@ -95,3 +95,8 @@ output "alb_dns_name" {
 output "asg_names" {
     value = module.asg.asg_names
 }
+
+output "repository_url" {
+    value = module.ECR.repository_url
+    description = "URL of the ECR repository"
+}

@@ -49,3 +49,8 @@ variable "valkey_endpoint" {
   description = "The endpoint URL for the Valkey caching cluster"
   type        = string
 }
+
+variable "custom_wordpress_image" {
+  description = "The URL of our custom Zero-Touch WordPress image in ECR"
+  type        = string
+}

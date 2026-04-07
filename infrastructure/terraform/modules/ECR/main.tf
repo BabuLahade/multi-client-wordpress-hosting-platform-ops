@@ -9,7 +9,7 @@ resource "aws_ecr_repository" "wordpress_repo" {
 #we will only use 5 docke images latest
 resource "aws_ecr_lifecycle_policy" "wordpress_repo_lifecycle" {
     repository = aws_ecr_repository.wordpress_repo.name
-    policy = jsonencode[{
+    policy =  jsonencode({
         rules =[ {
             rulePriority = 1
             description = "Keep only 5 latest images"
@@ -23,5 +23,5 @@ resource "aws_ecr_lifecycle_policy" "wordpress_repo_lifecycle" {
             }
         }]
 
-    }]
+    })
 }

@@ -1,0 +1,95 @@
+### for creating customimage 
+# 1. Update server and install Docker and AWS CLI
+sudo apt update -y
+sudo apt install docker.io  -y
+sudo systemctl start docker
+
+sudo apt update -y
+sudo apt install unzip curl -y
+
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# 2. Configure your AWS Access (Paste your keys here when prompted!)
+aws configure
+
+
+### on local computer command prompt run 
+type %USERPROFILE%\.aws\credentials
+you will see iam user access key and secret key 
+
+
+# 3. Create the Docker folder and files
+mkdir docker && cd docker
+
+cat << 'EOF' > Dockerfile
+FROM wordpress:fpm
+
+RUN apt-get update && apt-get install -y unzip curl \
+    && curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+    && chmod +x wp-cli.phar \
+    && mv wp-cli.phar /usr/local/bin/wp
+
+# 3. Download the Redis Object Cache plugin directly into the source code
+RUN curl -fL -o /usr/src/wordpress/wp-content/plugins/redis-cache.zip https://downloads.wordpress.org/plugin/redis-cache.zip \
+    && unzip /usr/src/wordpress/wp-content/plugins/redis-cache.zip -d /usr/src/wordpress/wp-content/plugins/ \
+    && rm /usr/src/wordpress/wp-content/plugins/redis-cache.zip
+
+# 4. Download the WP Offload Media (S3) plugin directly into the source code
+RUN curl -fL -o /usr/src/wordpress/wp-content/plugins/amazon-s3-and-cloudfront.zip https://downloads.wordpress.org/plugin/amazon-s3-and-cloudfront.zip \
+    && unzip /usr/src/wordpress/wp-content/plugins/amazon-s3-and-cloudfront.zip -d /usr/src/wordpress/wp-content/plugins/ \
+    && rm /usr/src/wordpress/wp-content/plugins/amazon-s3-and-cloudfront.zip
+
+COPY zero-touch.sh /usr/local/bin/zero-touch.sh
+RUN chmod +x /usr/local/bin/zero-touch.sh
+
+ENTRYPOINT ["/usr/local/bin/zero-touch.sh"]
+CMD ["php-fpm"]
+EOF
+
+cat << 'EOF' > zero-touch.sh
+#!/bin/bash
+set -e
+
+/usr/local/bin/docker-entrypoint.sh "$@" &
+WP_PID=$!
+
+sleep 10
+
+echo "Waiting for database connection..."
+until wp db check --path=/var/www/html --allow-root > /dev/null 2>&1; do
+  echo "Database not ready, waiting 5 seconds..."
+  sleep 5
+done
+
+echo "Database connected! Running Zero-Touch configurations..."
+wp plugin activate redis-cache amazon-s3-and-cloudfront --path=/var/www/html --allow-root
+wp redis enable --path=/var/www/html --allow-root
+echo "Zero-Touch complete! Serving application..."
+
+wait $WP_PID
+EOF
+
+chmod +x zero-touch.sh
+
+echo "Files created! Ready for push."
+
+
+
+
+
+
+
+
+# 1. Log into ECR
+aws ecr get-login-password --region eu-north-1 | sudo docker login --username AWS --password-stdin 882083662991.dkr.ecr.eu-north-1.amazonaws.com
+
+# 2. Build the image
+sudo docker build -t wordpress-custom .
+
+# 3. Tag the image
+sudo docker tag wordpress-custom:latest sudo docker build -t wordpress-custom ..dkr.ecr.eu-north-1.amazonaws.com/wordpress-hosting-wordpress-ecr-repo:latest
+
+# 4. Push to ECR
+sudo docker push sudo docker build -t wordpress-custom ..dkr.ecr.eu-north-1.amazonaws.com/wordpress-hosting-ecr-repo:latest
