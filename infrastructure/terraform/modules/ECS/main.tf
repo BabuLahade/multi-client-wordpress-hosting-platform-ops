@@ -592,6 +592,7 @@ resource "aws_ecs_task_definition" "clients" {
         { name = "WORDPRESS_DB_NAME", value = "wp_${each.key}" },
 
         # valkey
+        { name = "VALKEY_HOST", value = var.valkey_endpoint },
         { name = "REDIS_HOST", value = var.valkey_endpoint },
         { name = "REDIS_PORT" , value = "6379" }
       ]

@@ -89,7 +89,7 @@ aws ecr get-login-password --region eu-north-1 | sudo docker login --username AW
 sudo docker build -t wordpress-custom .
 
 # 3. Tag the image
-sudo docker tag wordpress-custom:latest sudo docker build -t wordpress-custom ..dkr.ecr.eu-north-1.amazonaws.com/wordpress-hosting-wordpress-ecr-repo:latest
+sudo docker tag wordpress-custom:latest 882083662991.dkr.ecr.eu-north-1.amazonaws.com/wordpress-hosting-ecr-repo:latest
 
 # 4. Push to ECR
 sudo docker push sudo docker build -t wordpress-custom ..dkr.ecr.eu-north-1.amazonaws.com/wordpress-hosting-ecr-repo:latest
