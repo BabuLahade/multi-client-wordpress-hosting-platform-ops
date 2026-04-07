@@ -228,3 +228,14 @@ module "Route53" {
   source = "./modules/Route53"
   domain_name = var.domain_name
 }
+module "edge" {
+  source = "./modules/Edge"
+  
+  providers = {
+    aws.us_east_1 = aws.us_east_1
+  }
+
+  domain_name     = var.domain_name
+  route53_zone_id = module.route53.zone_id
+  alb_dns_name    = module.alb.alb_dns_name
+}
