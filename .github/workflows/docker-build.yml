@@ -1,0 +1,37 @@
+name: Build and Push Custom WordPress Image
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docker/**' # Only run this pipeline if you change files in the docker folder!
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest # This uses GitHub's temporary cloud server!
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: eu-north-1
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build, Tag, and Push Docker Image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        ECR_REPOSITORY: wordpress-hosting-ecr-repo # UPDATE THIS IF NEEDED
+        IMAGE_TAG: latest
+      run: |
+        cd docker 
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
