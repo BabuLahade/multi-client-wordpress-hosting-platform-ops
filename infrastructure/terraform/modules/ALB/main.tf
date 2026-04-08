@@ -230,7 +230,44 @@ resource "aws_lb_listener_rule" "ecs_clients" {
     target_group_arn = aws_lb_target_group.client1_tg_ecs[each.key].arn
   }
 }
+# # --- NEW RULE FOR YOUR REAL DOMAIN ---
+# resource "aws_lb_listener_rule" "main_production_domain" {
+#   listener_arn = aws_lb_listener.alb_listener.arn
+  
+#   # Priority 50 ensures this is checked BEFORE your .local rules (which are 100+)
+#   priority = 50 
 
+#   condition {
+#     host_header {
+#       values = ["babu-lahade.online"]
+#     }
+#   }
+
+#   action {
+#     type             = "forward"
+#     # This points the real domain directly to client4's ECS target group
+#     # (Change "client4" to a different name if you want to show a different client)
+#     target_group_arn = aws_lb_target_group.client1_tg_ecs["client4"].arn 
+#   }
+# }
+resource "aws_lb_listener_rule" "production" {
+  for_each     = toset(var.ecs_clients)
+  listener_arn = aws_lb_listener.alb_listener.arn
+  priority     = 300 + index(var.ecs_clients, each.key)
+  
+  condition {
+    host_header {
+      # BEFORE: values = ["${each.key}-ecs.local"]
+      # AFTER: Dynamically map the client name to your real domain!
+      values = ["${each.key}.babu-lahade.online"]
+    }
+  }
+
+  action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.client1_tg_ecs[each.key].arn
+  }
+}
 
 #   Creating error because of same port 80 in listener, you can change the port to 8080 or any other port which is not in use
 # resource "aws_lb_listener" "listener" {

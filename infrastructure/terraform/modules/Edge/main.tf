@@ -9,7 +9,8 @@ terraform {
 
 resource "aws_acm_certificate" "cert" {
     provider = aws.us_east_1
-    domain_name = var.doamin.name
+    domain_name = var.domain_name
+    subject_alternative_names = ["*.${var.domain_name}"]
     validation_method = "DNS"
 }
 
@@ -38,7 +39,7 @@ resource "aws_acm_certificate_validation" "cert" {
 
 resource "aws_cloudfront_distribution" "cdn" {
     enabled = true
-    aliases = [var.domain_name]
+    aliases = [var.domain_name , "*.${var.domain_name}"]
 
     origin {
         domain_name = var.alb_dns_name
@@ -89,4 +90,16 @@ resource "aws_route53_record" "apex" {
         zone_id = aws_cloudfront_distribution.cdn.hosted_zone_id
         evaluate_target_health = false
     }
+}
+# Route ALL subdomains to the CDN
+resource "aws_route53_record" "wildcard" {
+  zone_id = var.route53_zone_id
+  name    = "*.${var.domain_name}" # The * makes it a wildcard!
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.cdn.domain_name
+    zone_id                = aws_cloudfront_distribution.cdn.hosted_zone_id
+    evaluate_target_health = false
+  }
 }

@@ -236,6 +236,6 @@ module "edge" {
   }
 
   domain_name     = var.domain_name
-  route53_zone_id = module.route53.zone_id
+  route53_zone_id = module.Route53.zone_id
   alb_dns_name    = module.alb.alb_dns_name
 }
