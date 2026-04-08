@@ -1,0 +1,23 @@
+name: Creating New Pipeline
+
+# event when should this run 
+on :
+  push:
+    branches:
+      - main
+
+# 2. THE JOBS: What are we doing?
+jobs :
+  explore-github-action :
+    # 3. THE RUNNER: Boot up a fresh Ubuntu Linux server
+    runs-on : ubuntu-latest
+    # 4. THE STEPS: Type these commands into that server
+    steps : 
+      - name : say hello
+        run : echo "Hello World! I am running on a GitHub server! "
+
+      - name : Check the Server Specs
+        run : |
+          echo "Here is the operating system:"
+          cat /etc/os-release
+          echo "Here is the CPU information:"
