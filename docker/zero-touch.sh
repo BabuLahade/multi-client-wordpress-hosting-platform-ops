@@ -26,7 +26,12 @@ done
 echo "WordPress is fully installed! Running Zero-Touch configurations..."
 
 echo "WordPress is fully installed! Running Zero-Touch configurations..."
+# Force WordPress to dynamically accept wildcard subdomains
+wp config set WP_HOME "https://\$_SERVER['HTTP_HOST']" --raw --allow-root
+wp config set WP_SITEURL "https://\$_SERVER['HTTP_HOST']" --raw --allow-root
 
+# Tell the S3 plugin to use the ECS IAM Role
+wp config set AS3CF_AWS_USE_EC2_IAM_ROLE true --raw --allow-root
 # 1. Forcefully inject the Valkey endpoint into wp-config.php
 if [ -n "$VALKEY_HOST" ]; then
     echo "Injecting Valkey host into config..."

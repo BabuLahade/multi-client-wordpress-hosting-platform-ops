@@ -44,6 +44,7 @@ RUN curl -fL -o /usr/src/wordpress/wp-content/plugins/amazon-s3-and-cloudfront.z
     && rm /usr/src/wordpress/wp-content/plugins/amazon-s3-and-cloudfront.zip
 
 COPY zero-touch.sh /usr/local/bin/zero-touch.sh
+RUN sed -i 's/\r$//' /usr/local/bin/zero-touch.sh
 RUN chmod +x /usr/local/bin/zero-touch.sh
 
 ENTRYPOINT ["/usr/local/bin/zero-touch.sh"]
