@@ -7,7 +7,7 @@ on :
 # Define variables we can reuse throughout the pipeline
 env:
   AWS_REGION: eu-north-1
-  ECR_REPOSITORY: wordpress-wordpress-hosting-ecr-repo
+  ECR_REPOSITORY: wordpress-hosting-ecr-repo
 
 jobs: 
   build-and-push:
@@ -42,7 +42,7 @@ jobs:
         run: |
             echo "moving to docker folder"
             cd docker 
-            
+
             echo "Building docker image"
             docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
 
