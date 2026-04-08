@@ -29,7 +29,7 @@ jobs:
       # 3. Log the Docker client into your specific ECR Registry
       - name: Login to Amazon ECR
         id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v4
+        uses: aws-actions/amazon-ecr-login@v2
 
         # 4. Build the image and push it!
       - name: Build, Tag, and Push Docker Image
