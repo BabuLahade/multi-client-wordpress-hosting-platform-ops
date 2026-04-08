@@ -1,0 +1,43 @@
+name: CI/CD - Build and Push to Docker Hub
+
+on:
+  push:
+    branches:
+      - main
+# Define variables we can reuse throughout the pipeline
+env:
+  DOCKER_REPO_NAME: wordpress-custom
+
+jobs:
+  build-and-push:
+    name: Build and push image to Docker Hub
+    runs-on: ubuntu-latest
+
+    steps: 
+    # 1. Download your code onto the GitHub server
+      - name : Checkout code
+        uses: actions/checkout@v4
+
+    ### 2  docker login
+      - name : login to dccker 
+        uses: docker/login-action@v3
+        with: 
+          username: ${{secrets.DOCKER_USERNAME}}
+          paasword: ${{secrets.DOCKER_TOKEN}}
+
+      # 3. Navigate to the folder, build, and push!
+      - name: Build and Push Image tp Docker Hub
+        env:
+          IMAGE_TAG: ${{github.sha}}
+          FULL_IMAGE_PATH: ${{secrets.DOCKER_USERNAME}}/${{env.DOCKER_REPO_NAME}}
+        run: |
+          echo "Moving into the docker folder..."
+          cd docker
+
+          echo "Building the Docker image..."
+          docker build -t $FULL_IMAGE_PATH:$IMAGE_TAG -t $FULL_IMAGE_PATH:latest .
+
+          echo "Pushing the image to Docker Hub..."
+          docker push --all-tags $FULL_IMAGE_PATH
+
+      
