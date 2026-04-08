@@ -1,0 +1,48 @@
+name: Deploy Application
+on :
+  push:
+    branches:
+      - main
+
+# Define variables we can reuse throughout the pipeline
+env:
+  AWS_REGION: eu-north-1
+  ECR_REPOSITORY: wordpress-wordpress-hosting-ecr-repo
+
+jobs: 
+  build-and-push:
+    name : build image and push to aws 
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. Download your code onto the GitHub server
+      - name: Checkout code 
+        uses: actions/checkout@v4
+      # 2. Log into AWS using the secrets you just saved
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with: 
+          aws-access-key-id: ${{secrets.AWS_ACCESS_KEY_ID}}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+          aws-region: ${{ env.AWS_REGION}}
+
+      # 3. Log the Docker client into your specific ECR Registry
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v4
+
+        # 4. Build the image and push it!
+      - name: Build, Tag, and Push Docker Image
+        env: 
+          # This grabs the secure registry URL from step 3
+          ECR_REGISTRY: ${{steps.login-ecr.outputs.registry}}
+          # This creates a unique tag using the Git Commit ID (e.g., a1b2c3d)
+          IMAGE_TAG: ${{github.sha}}
+
+        run: |
+            echo "Building docker image"
+            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+
+            echo "Pushing image to ecr repo"
+            docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
+
