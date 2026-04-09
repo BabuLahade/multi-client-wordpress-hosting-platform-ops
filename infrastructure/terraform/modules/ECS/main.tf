@@ -624,7 +624,6 @@ resource "aws_ecs_task_definition" "clients" {
         }
       ]
       
-      # FIXED: Mount the exact same HTML folder
       mountPoints = [
         {
           sourceVolume  = "wordpress-files"
@@ -632,10 +631,12 @@ resource "aws_ecs_task_definition" "clients" {
         }
       ]
       
+      # THE FIX: Added 'fastcgi_param HTTPS on;' inside the location ~ \.php$ block!
       command = [
         "/bin/sh", "-c",
-        "echo 'server { listen 80; root /var/www/html; index index.php; location /health { access_log off; return 200 \"healthy\"; } location / { try_files $uri $uri/ /index.php?$args; } location ~ \\.php$ { fastcgi_pass 127.0.0.1:9000; fastcgi_index index.php; fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; include fastcgi_params; } }' > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
+        "echo 'server { listen 80; root /var/www/html; index index.php; location /health { access_log off; return 200 \"healthy\"; } location / { try_files $uri $uri/ /index.php?$args; } location ~ \\.php$ { fastcgi_pass 127.0.0.1:9000; fastcgi_index index.php; fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; include fastcgi_params; fastcgi_param HTTPS on; } }' > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"
       ]
+      
       logConfiguration = {
         logDriver = "awslogs"
         options = {
