@@ -67,7 +67,11 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
             docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
-
+# 7. CONTINUOUS DEPLOYMENT (CD): Force Fargate to restart and pull the new secure image
+      - name: Deploy to AWS ECS
+        run: |
+          echo "Telling AWS to deploy the new image to the live website..."
+          aws ecs update-service --cluster wordpress-hosting-cluster --service wordpress-hosting-client3-service --force-new-deployment
       
             
         
