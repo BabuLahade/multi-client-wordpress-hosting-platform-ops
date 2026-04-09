@@ -145,21 +145,21 @@ module "IAM" {
   project_name = var.project_name
   media_bucket_arn = module.s3.media_bucket_arn
 }
-module "launch_template" {
-  source = "./modules/ec2_launch_template"
+# module "launch_template" {
+#   source = "./modules/ec2_launch_template"
 
-  project_name = var.project_name
-  ami_id = var.ami_id
-  instance_type = var.instance_type
-  key_name = var.key_name
-  ec2_clients = var.ec2_clients
-  app_security_group_id = module.security_group.app_security_group_id
-  iam_instance_profile_name = module.IAM.iam_instance_profile_name
-  # db_instance_endpoint = module.rds.db_instance_endpoint
-  db_instance_address = module.rds.db_instance_address
-  db_secret_arn = module.secretsmanager.db_secret_arn 
+#   project_name = var.project_name
+#   ami_id = var.ami_id
+#   instance_type = var.instance_type
+#   key_name = var.key_name
+#   ec2_clients = var.ec2_clients
+#   app_security_group_id = module.security_group.app_security_group_id
+#   iam_instance_profile_name = module.IAM.iam_instance_profile_name
+#   # db_instance_endpoint = module.rds.db_instance_endpoint
+#   db_instance_address = module.rds.db_instance_address
+#   db_secret_arn = module.secretsmanager.db_secret_arn 
   
-}
+# }
 
 module "alb" {
   source = "./modules/ALB"
@@ -173,21 +173,21 @@ module "alb" {
 
 }
 
-module "asg" {
-  source = "./modules/ASG"
+# module "asg" {
+#   source = "./modules/ASG"
 
-  project_name = var.project_name
-  vpc_id = module.vpc.vpc_id
-  private_app_subnet_ids = module.subnet.private_app_subnet_ids
-  ec2_clients = var.ec2_clients
+#   project_name = var.project_name
+#   vpc_id = module.vpc.vpc_id
+#   private_app_subnet_ids = module.subnet.private_app_subnet_ids
+#   ec2_clients = var.ec2_clients
 
-  launch_template_ids=  module.launch_template.launch_template_ids
-  target_group_arns = module.alb.target_group_arns
-  # target_group_arn_1 = module.alb.target_group_arn_1
-  # target_group_arn_2 = module.alb.target_group_arn_2
-  # launch_template_id_1= module.launch_template.launch_template_id_1
-  # launch_template_id_2 = module.launch_template.launch_template_id_2
-}
+#   launch_template_ids=  module.launch_template.launch_template_ids
+#   target_group_arns = module.alb.target_group_arns
+#   # target_group_arn_1 = module.alb.target_group_arn_1
+#   # target_group_arn_2 = module.alb.target_group_arn_2
+#   # launch_template_id_1= module.launch_template.launch_template_id_1
+#   # launch_template_id_2 = module.launch_template.launch_template_id_2
+# }
 module "efs" {
   source= "./modules/EFS"
   project_name = var.project_name

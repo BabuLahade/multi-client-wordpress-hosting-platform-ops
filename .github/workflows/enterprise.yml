@@ -1,0 +1,99 @@
+name: Enterprise CI/CD - Matrix Canary
+
+on:
+  pull_request:
+    branches:
+      - main
+
+env:
+  AWS_REGION: eu-north-1
+  ECR_REPOSITORY: wordpress-hosting-ecr-repo
+  ECS_CLUSTER: wordpress-hosting-cluster
+
+jobs: 
+  # ==========================================
+  # JOB 1: THE SECURE BUILD
+  # ==========================================
+  ci-build-scan-push:
+    name: Build, Sec-Scan, and Push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code 
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with: 
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker Image
+        env: 
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+            cd docker
+            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+
+      - name: Run Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Push Image to ECR
+        env: 
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        run: docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
+
+  # ==========================================
+  # JOB 2: THE CANARY DEPLOYMENT (REQUIRES APPROVAL)
+  # ==========================================
+  cd-matrix-canary:
+    name: Matrix Canary Rollout
+    runs-on: ubuntu-latest
+    needs: ci-build-scan-push # This tells GitHub to wait for Job 1 to finish!
+    environment: production   # THIS IS THE MAGIC WORD. It triggers your manual approval gate.
+    
+    steps:
+      # We must re-authenticate because this is a brand new server
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with: 
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Execute Matrix Canary
+        run: |
+          echo "Initiating Canary Deployment to client3..."
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service wordpress-client3-service --force-new-deployment --no-cli-pager
+
+          echo "Waiting for Canary (client3) container to stabilize..."
+          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services wordpress-client3-service
+
+          echo "Performing HTTP Health Check on Canary..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L https://client3.babu-lahade.online)
+          
+          if [ "$HTTP_STATUS" -eq 200 ]; then
+            echo "Canary is HEALTHY (Status 200). Safe to proceed."
+            
+            CLIENTS=("client4" "client5")
+            for CLIENT in "${CLIENTS[@]}"; do
+              echo "Deploying to ${CLIENT}..."
+              aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service wordpress-${CLIENT}-service --force-new-deployment --no-cli-pager
+            done
+            echo "Global Rollout Complete!"
+          else
+            echo "CRITICAL: Canary failed with Status $HTTP_STATUS. Halting deployment!"
+            exit 1
+          fi
