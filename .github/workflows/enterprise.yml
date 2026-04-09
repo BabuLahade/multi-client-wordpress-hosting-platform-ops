@@ -1,7 +1,7 @@
 name: Enterprise CI/CD - Matrix Canary
 
 on:
-  pull_request:
+  push:
     branches:
       - main
 
@@ -87,7 +87,7 @@ jobs:
           if [ "$HTTP_STATUS" -eq 200 ]; then
             echo "Canary is HEALTHY (Status 200). Safe to proceed."
             
-            CLIENTS=("client4" "client5")
+            CLIENTS=("client4")
             for CLIENT in "${CLIENTS[@]}"; do
               echo "Deploying to ${CLIENT}..."
               aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service wordpress-${CLIENT}-service --force-new-deployment --no-cli-pager
