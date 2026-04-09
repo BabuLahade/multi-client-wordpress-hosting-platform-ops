@@ -79,7 +79,7 @@ jobs:
           echo "performing HTTP health check on canary"
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L https://client3.babu-lahade.online)
 
-          if ["$HTTP_STATUS" -eq 200 ]; then
+          if [ "$HTTP_STATUS" -eq 200 ]; then
             echo "Canary is HEALTHY (Status 200). The code is safe. Proceeding with Global Rollout!"
 
             # The safe list of remaining clients
