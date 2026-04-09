@@ -67,12 +67,32 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: |
             docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
-# 7. CONTINUOUS DEPLOYMENT (CD): Force Fargate to restart and pull the new secure image
-      - name: Deploy to AWS ECS
+# 7. THE MATRIX CANARY (CD): Deploy to Canary, Verify, then Global Rollout
+      - name: Matrix Canary Deployment
         run: |
-          echo "Telling AWS to deploy the new image to the live website..."
-          aws ecs update-service --cluster wordpress-hosting-cluster --service wordpress-hosting-client3-service --force-new-deployment
-      
-            
-        
+          echo "Initiating Canary Deployment..."
+          aws ecs update-service --cluster wordpress-hosting-cluster --service wordpress-hosting-client3-service --force-new-deployment --no-cli-pager
+
+          echo "waiting for canary (client 3) container to stabilize (this take ~3 minutes)"
+          aws ecs wait services-stable --cluster wordpress-hosting-cluster --services wordpress-hosting-client3-service
+
+          echo "performing HTTP health check on canary"
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L https://client3.babu-lahade.online)
+
+          if ["$HTTP_STATUS" -eq 200 ]; then
+            echo "Canary is HEALTHY (Status 200). The code is safe. Proceeding with Global Rollout!"
+
+            # The safe list of remaining clients
+            CLIENTS=("client4")
+            for CLIENT in "${CLIENTS[@]}";do
+              echo "deploying to  ${CLIENT}"
+              aws ecs update-service --cluster wordpress-hosting-cluster --service wordpress-hosting-client3-service --force-new-deployment --no-cli-pager
+            done 
+            echo "Matrix Global Rollout Complete"
+
+          else
+            echo "CRITICAL: Canary failed with HTTP Status $HTTP_STATUS, Halting Global Rollout to protect other clients!"
+            exit 1 # This command instantly crashes the GitHub pipeline so it stops
+          fi 
+
 
