@@ -76,10 +76,10 @@ jobs:
       - name: Execute Matrix Canary
         run: |
           echo "Initiating Canary Deployment to client3..."
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service wordpress-client3-service --force-new-deployment --no-cli-pager
+          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service wordpress-hosting-client3-service --force-new-deployment --no-cli-pager
 
           echo "Waiting for Canary (client3) container to stabilize..."
-          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services wordpress-client3-service
+          aws ecs wait services-stable --cluster ${{ env.ECS_CLUSTER }} --services wordpress-hosting-client3-service
 
           echo "Performing HTTP Health Check on Canary..."
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L https://client3.babu-lahade.online)
@@ -90,7 +90,7 @@ jobs:
             CLIENTS=("client4")
             for CLIENT in "${CLIENTS[@]}"; do
               echo "Deploying to ${CLIENT}..."
-              aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service wordpress-${CLIENT}-service --force-new-deployment --no-cli-pager
+              aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service wordpress-hosting-${CLIENT}-service --force-new-deployment --no-cli-pager
             done
             echo "Global Rollout Complete!"
           else
