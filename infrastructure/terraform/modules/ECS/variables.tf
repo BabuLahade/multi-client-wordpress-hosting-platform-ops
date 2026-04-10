@@ -54,3 +54,8 @@ variable "custom_wordpress_image" {
   description = "The URL of our custom Zero-Touch WordPress image in ECR"
   type        = string
 }
+
+variable "cloudwatch_log_group_name" {
+  description = "value"
+  type = map(string)
+}

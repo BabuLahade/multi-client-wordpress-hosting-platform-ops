@@ -39,6 +39,7 @@ resource "aws_acm_certificate_validation" "cert" {
 
 resource "aws_cloudfront_distribution" "cdn" {
     enabled = true
+    web_acl_id = var.web_acl_id
     aliases = [var.domain_name , "*.${var.domain_name}"]
 
     origin {

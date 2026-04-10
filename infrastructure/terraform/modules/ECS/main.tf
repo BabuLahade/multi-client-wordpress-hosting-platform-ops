@@ -326,11 +326,11 @@ resource "aws_ecs_cluster" "clients" {
   name = "${var.project_name}-cluster"
 }
 
-resource "aws_cloudwatch_log_group" "wordpress_logs" {
-  for_each          = toset(var.ecs_clients) 
-  name              = "/ecs/${var.project_name}-${each.key}-wordpress"
-  retention_in_days = 7
-}
+# resource "aws_cloudwatch_log_group" "wordpress_logs" {
+#   for_each          = toset(var.ecs_clients) 
+#   name              = "/ecs/${var.project_name}-${each.key}-wordpress"
+#   retention_in_days = 7
+# }
 resource "aws_efs_access_point" "wordpress_ap" {
   for_each       = toset(var.ecs_clients)
   file_system_id = var.efs_file_system_id
@@ -560,7 +560,7 @@ resource "aws_ecs_task_definition" "clients" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.wordpress_logs[each.key].name
+          awslogs-group         = var.cloudwatch_log_group_name[each.key]
           awslogs-region        = "eu-north-1"
           awslogs-stream-prefix = "ecs-db-init"
         }
@@ -602,7 +602,7 @@ resource "aws_ecs_task_definition" "clients" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.wordpress_logs[each.key].name
+          awslogs-group         = var.cloudwatch_log_group_name[each.key]
           awslogs-region        = "eu-north-1"
           awslogs-stream-prefix = "ecs"
         }
@@ -640,7 +640,7 @@ resource "aws_ecs_task_definition" "clients" {
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group         = aws_cloudwatch_log_group.wordpress_logs[each.key].name
+          awslogs-group         = var.cloudwatch_log_group_name[each.key]
           awslogs-region        = "eu-north-1"
           awslogs-stream-prefix = "ecs-nginx" 
         }

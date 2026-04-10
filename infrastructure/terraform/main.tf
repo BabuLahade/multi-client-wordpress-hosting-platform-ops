@@ -221,6 +221,7 @@ module "ECS" {
   efs_file_system_id = module.efs.efs_file_system_id
   valkey_endpoint = module.redis.valkey_endpoint
   custom_wordpress_image = "${module.ECR.repository_url}:latest"
+  cloudwatch_log_group_name = module.cloudwatch.cloudwatch_log_group_name
 }
 
 
@@ -238,4 +239,24 @@ module "edge" {
   domain_name     = var.domain_name
   route53_zone_id = module.Route53.zone_id
   alb_dns_name    = module.alb.alb_dns_name
+  web_acl_id = module.WAF.web_acl_id
+}
+
+module "cloudwatch" {
+  source = "./modules/cloudwatch"
+  project_name = var.project_name
+  ecs_clients = var.ecs_clients
+
+}
+
+module "budget" {
+  source = "./modules/budget"
+}
+
+module "WAF" {
+  source = "./modules/WAF"
+  providers = {
+    aws.global = aws.global
+  }
+  project_name = var.project_name
 }

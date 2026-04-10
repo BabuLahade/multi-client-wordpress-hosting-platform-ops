@@ -38,3 +38,14 @@ resource "aws_route_table_association" "public_rt_assoc" {
     route_table_id = aws_route_table.public_rt.id
 }
 
+resource "aws_vpc_endpoint" "s3" {
+    vpc_id = var.vpc_id
+    service_name = "com.amazonaws.eu-north-1.s3"
+
+    route_table_ids = [
+        for rt in aws_route_table.private_rt : rt.id
+    ]
+    tags = {
+    Name = "${var.project_name}-s3-free-tunnel"
+  }
+}
