@@ -182,7 +182,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
           metrics = [
             ["AWS/ECS", "MemoryUtilization" , "ClusterName", var.cluster_name]
           ]
-          view = timeseries
+          view = "timeseries"
           stacked = false
           region = "eu-north-1"
           title = "Fargate Memory Utilization"
@@ -199,7 +199,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
           metrics =[
             ["AWS/RDS","DatabaseConnections" , "DBInstanceIdentifier" , var.db_instance_id]
           ]
-          view = timeseries
+          view = "timeseries"
           stacked = false 
           region = "eu-north-1"
           title = "RDS Database Connection"

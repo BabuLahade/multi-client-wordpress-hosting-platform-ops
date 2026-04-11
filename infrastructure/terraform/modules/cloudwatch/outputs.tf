@@ -3,3 +3,10 @@ output "cloudwatch_log_group_name" {
         for k ,v in aws_cloudwatch_log_group.wordpress_logs : k=>v.name
     }
 }
+output "alb_5xx_alarm" {
+    value = aws_cloudwatch_metric_alarm.alb_5xx_errors.alarm_name
+
+}
+output "ecs_memory_high" {
+    value = aws_cloudwatch_metric_alarm.ecs_memory_high.alarm_name
+}

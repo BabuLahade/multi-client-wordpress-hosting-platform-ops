@@ -669,6 +669,19 @@ resource "aws_ecs_service" "clients" {
     container_name   = "nginx"
     container_port   = 80
   }
+  deployment_circuit_breaker {
+    enable = true 
+    rollback = true
+  }
+  alarms {
+    enable = true 
+    rollback = true
+    alarm_names = [
+    
+      var.ecs_memory_high ,
+      var.alb_5xx_alarm 
+    ]
+  }
 }
 
 ## autoscaling target

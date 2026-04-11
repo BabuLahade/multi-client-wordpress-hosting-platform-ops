@@ -222,6 +222,8 @@ module "ECS" {
   valkey_endpoint = module.redis.valkey_endpoint
   custom_wordpress_image = "${module.ECR.repository_url}:latest"
   cloudwatch_log_group_name = module.cloudwatch.cloudwatch_log_group_name
+  alb_5xx_alarm = module.cloudwatch.alb_5xx_alarm
+  ecs_memory_high = module.cloudwatch.ecs_memory_high
 }
 
 

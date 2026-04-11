@@ -73,6 +73,22 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      - name: SRE Alrm check gate.
+        run: |
+          echo "Checking System Health before deployment"
+
+          ALARM_STATE=$(aws cloudwatch describe-alarms \
+            --alarm-names "wordpress-hosting-ALB-5xx-Spike" \
+            --query "MetricAlarms[0].StateValue" \
+            --output text)
+          if [ "$ALARM_STATE" == "ALARM" ]; then
+            echo "CRITICAL: The system is currently unstable (5xx error detected) }..."
+            echo "Deployment blocked : refusing to deploy into an active incident "
+            exit 1
+          else 
+            echo "System is HEALTHY . Proceeding to execute matrix canary"
+          fi
+
       - name: Execute Matrix Canary
         run: |
           echo "Initiating Canary Deployment to client3..."
