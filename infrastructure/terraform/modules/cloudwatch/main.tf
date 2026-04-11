@@ -26,12 +26,12 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
 }
 
 ## alarm for ecs memory  OOM kill
-resource "aws_ccloudwatch_metric_alarm" "ecs_memory_high" {
+resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   alarm_name = "${var.project_name}-fargate-memory-critical"
   comparison_operator = "GreaterThanThreshold"
   metric_name = "MemoryUtilization"
   namespace = "AWS/ECS"
-  statistics = "Average"
+  statistic = "Average"
 
   period =60
   evaluation_periods  = 3
@@ -138,9 +138,93 @@ resource "aws_cloudwatch_metric_alarm" "cache_evictions" {
   threshold           = 50 # Alert if 50+ items are deleted due to memory pressure
 
   dimensions = {
-    CacheClusterId = aws_elasticache_cluster.wordpress_cache.id
+    CacheClusterId = var.cache_id
   }
 
-  alarm_actions = [aws_sns_topic.sre_alerts.arn]
+  alarm_actions = [var.sns_arn]
   alarm_description = "WARNING: Cache is full and evicting data. Consider upgrading the ElastiCache node type."
+}
+
+
+#########3 dashboard for those 
+
+resource "aws_cloudwatch_dashboard" "main_dashbpard" {
+  dashboard_name = "${var.project_name}-mission-control"
+
+  #  i am using jasonencode to clean and readable
+  dashboard_body = jsonencode({
+    widgets = [
+      # widget 1 : Fargate CPU 
+      {
+        type = "metric"
+        x = 0
+        y = 0
+        width = 12
+        height = 6
+        properties = {
+          metrics = [
+                ["AWS/ECS" , "CPUUtilization","ClusterName", var.cluster_name ]
+          ]
+          view = "timeseries"
+          stacked = false
+          region = "eu-north-1"
+          title = "Fargate CPU Utilization"
+        }
+      } ,
+      ## widget 2 FArgate cpu memory
+      {
+        type = "metric"
+        x = 12
+        y = 0
+        width = 12
+        height = 6
+        properties = {
+          metrics = [
+            ["AWS/ECS", "MemoryUtilization" , "ClusterName", var.cluster_name]
+          ]
+          view = timeseries
+          stacked = false
+          region = "eu-north-1"
+          title = "Fargate Memory Utilization"
+        } 
+      },
+      ### widget 3 RDS connections 
+      {
+        type = "metric"
+        x = 0
+        y = 6
+        width = 12
+        height = 6
+        properties = {
+          metrics =[
+            ["AWS/RDS","DatabaseConnections" , "DBInstanceIdentifier" , var.db_instance_id]
+          ]
+          view = timeseries
+          stacked = false 
+          region = "eu-north-1"
+          title = "RDS Database Connection"
+        }
+      },
+      #### widget 4 ALB 5XX error 
+      {
+        type = "metric"
+        x = 12
+        y = 6
+        width = 12
+        height = 6
+        properties ={
+          metrics = [
+            ["AWS/ApplicationELB","HTTPCode_Target_5XX_count","LoadBalancer",var.alb_arn]
+          ]
+          view = "timeseries"
+          stacked = false
+          region = "eu-north-1"
+          title = "ALB 5xx Errors (Application Failures)"
+          stat = "Sum"
+        }
+      }
+
+
+    ]
+  })
 }

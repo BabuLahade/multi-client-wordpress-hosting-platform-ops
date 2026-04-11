@@ -246,6 +246,11 @@ module "cloudwatch" {
   source = "./modules/cloudwatch"
   project_name = var.project_name
   ecs_clients = var.ecs_clients
+  cluster_name = module.ECS.cluster_name
+  sns_arn = module.SNS.sns_arn
+  db_instance_id = module.rds.db_instance_id
+  alb_arn = module.alb.alb_arn
+  cache_id = module.redis.cache_id
 
 }
 
@@ -258,5 +263,9 @@ module "WAF" {
   providers = {
     aws.global = aws.global
   }
+  project_name = var.project_name
+}
+module "SNS" {
+  source = "./modules/SNS"
   project_name = var.project_name
 }
