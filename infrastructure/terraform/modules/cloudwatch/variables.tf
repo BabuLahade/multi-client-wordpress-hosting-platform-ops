@@ -14,3 +14,12 @@ variable "cluster_name" {
 variable "sns_arn" {
   type = string
 }
+variable "db_instance_id" {
+    type = string
+}
+variable "alb_arn" {
+    type = string 
+}
+variable "cache_id" {
+  type = string
+}
