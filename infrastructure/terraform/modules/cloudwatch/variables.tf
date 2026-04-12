@@ -23,3 +23,9 @@ variable "alb_arn" {
 variable "cache_id" {
   type = string
 }
+variable "alb_arn_suffix" {
+  type = string
+}
+# variable "service_name" {
+#   type = map(string)
+# }

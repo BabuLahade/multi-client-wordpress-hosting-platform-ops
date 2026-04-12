@@ -8,5 +8,7 @@ output "alb_5xx_alarm" {
 
 }
 output "ecs_memory_high" {
-    value = aws_cloudwatch_metric_alarm.ecs_memory_high.alarm_name
+    value = {
+        for k , v in aws_cloudwatch_metric_alarm.ecs_memory_high : k=>v.alarm_name
+    }
 }

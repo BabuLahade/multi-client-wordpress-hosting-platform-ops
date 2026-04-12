@@ -678,7 +678,7 @@ resource "aws_ecs_service" "clients" {
     rollback = true
     alarm_names = [
     
-      var.ecs_memory_high ,
+      var.ecs_memory_high[each.key],
       var.alb_5xx_alarm 
     ]
   }

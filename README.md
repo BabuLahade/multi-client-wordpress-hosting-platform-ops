@@ -485,3 +485,292 @@ The focus is demonstrating:
 - infrastructure automation
 - operational reliability
 - platform engineering concepts
+
+# Multi-Client WordPress Hosting Platform
+
+> Production-grade multi-tenant SaaS hosting infrastructure on AWS — three isolated client environments, shared compute, zero cross-tenant data access, full SRE observability layer.
+
+[![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC?style=flat-square&logo=terraform)](https://www.terraform.io/)
+[![AWS ECS](https://img.shields.io/badge/Compute-ECS%20Fargate-FF9900?style=flat-square&logo=amazonaws)](https://aws.amazon.com/ecs/)
+[![Prometheus](https://img.shields.io/badge/Metrics-Prometheus-E6522C?style=flat-square&logo=prometheus)](https://prometheus.io/)
+[![Grafana](https://img.shields.io/badge/Dashboards-Grafana-F46800?style=flat-square&logo=grafana)](https://grafana.com/)
+[![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+
+---
+
+## What this is
+
+Most "WordPress on AWS" projects deploy one site to one container. This project solves a harder problem: **multiple clients sharing the same AWS infrastructure with complete isolation between them** — the same architecture used by managed WordPress hosts like WP Engine and Kinsta.
+
+Each client gets a dedicated ECS Fargate container, an isolated RDS database, a separate EFS access point, and a scoped Valkey cache namespace. They share the ALB, the VPC, the RDS instance, and the Valkey cluster — but none of them can see, affect, or slow down the others.
+
+The platform comes with a full SRE layer: per-client SLOs, error budget tracking, auto-healing, and three Grafana dashboards. Adding a new client is one line in `terraform.tfvars`.
+
+---
+
+## Architecture
+
+```
+Internet
+    │
+    ▼
+┌─────────────────────────────────────────────────────┐
+│  Route 53  ──►  CloudFront CDN  ──►  ACM (SSL)      │
+└─────────────────────────────────────────────────────┘
+    │
+    ▼ HTTPS only
+┌──────────────────────────────────────────────────────────────────┐
+│  Application Load Balancer                                        │
+│  Host-based routing: clienta.com → TG-A · clientb.com → TG-B    │
+└──────────────────────────────────────────────────────────────────┘
+    │              │              │
+    ▼              ▼              ▼
+┌─────────┐  ┌─────────┐  ┌─────────┐
+│ ECS     │  │ ECS     │  │ ECS     │   Private subnets
+│ Task A  │  │ Task B  │  │ Task C  │   ECS Fargate
+│ WP+CLI  │  │ WP+CLI  │  │ WP+CLI  │   entrypoint.sh
+└────┬────┘  └────┬────┘  └────┬────┘
+     │             │             │
+     ▼             ▼             ▼
+┌───────────────────────────────────────────────────────────────────┐
+│  RDS MySQL Multi-AZ                                                │
+│  wp_clienta  |  wp_clientb  |  wp_clientc  — separate DB + user  │
+└───────────────────────────────────────────────────────────────────┘
+     │             │             │
+     ▼             ▼             ▼
+  EFS              Valkey             S3
+  /clienta         clienta_wp_*      clienta/uploads/
+  /clientb         clientb_wp_*      clientb/uploads/
+  /clientc         clientc_wp_*      clientc/uploads/
+```
+
+**Full architecture diagram:** [`architecture/architecture.png`](architecture/architecture.png)  
+**CI/CD pipeline diagram:** [`architecture/cicd-pipeline.png`](architecture/cicd-pipeline.png)
+
+---
+
+## Key technical decisions
+
+**Why Valkey instead of Redis?**  
+Redis changed its licence from BSD to SSPL in March 2024. SSPL is not OSI-approved open source. Valkey is the Linux Foundation fork that maintains the original BSD licence. Functionally identical for object caching. See [`docs/adr/001-valkey-over-redis.md`](docs/adr/001-valkey-over-redis.md).
+
+**Why ECS Fargate instead of EC2?**  
+No EC2 instances to patch, right-size, or manage. Each client's container is serverless and fully isolated at the compute layer. Cost scales with usage, not reservation. See [`docs/adr/002-fargate-over-ec2.md`](docs/adr/002-fargate-over-ec2.md).
+
+**Why a custom Docker image instead of `wordpress:latest`?**  
+The official image requires manual plugin installation via the WP admin UI after each deployment. The custom image uses WP-CLI during the build to bake plugins directly into the image. `entrypoint.sh` reads Terraform-injected environment variables at boot and configures WordPress automatically — zero human interaction after `terraform apply`. See [`docs/adr/003-custom-docker-image.md`](docs/adr/003-custom-docker-image.md).
+
+**Why per-client SLOs instead of one platform SLO?**  
+A platform-wide SLO averages Client A's outage across all requests, making a complete outage for one tenant invisible in aggregate metrics. Per-client SLOs mean each tenant's reliability is measured and tracked independently. See [`docs/adr/004-per-client-slo.md`](docs/adr/004-per-client-slo.md).
+
+---
+
+## What it costs
+
+| Resource | Monthly cost |
+|---|---|
+| ECS Fargate — 3 tasks (512 CPU / 1024 MB each) | ~$15 |
+| RDS MySQL db.t3.micro Multi-AZ | ~$30 |
+| Application Load Balancer | ~$18 |
+| ElastiCache Valkey cache.t3.micro | ~$13 |
+| NAT Gateway | ~$10 |
+| CloudFront + S3 + data transfer | ~$5 |
+| **Total for 3 clients** | **~$75/month** |
+
+Per-client cost: **~$25/month**. Compare to WP Engine managed hosting at $25–50 per site. This platform's cost efficiency improves as more clients are added — fixed costs like the ALB and NAT Gateway are shared across all tenants.
+
+---
+
+## Load test results
+
+Tested with k6 at 500 concurrent users per client site simultaneously.
+
+| Metric | Result |
+|---|---|
+| p50 response time | 210ms |
+| p95 response time | 580ms |
+| p99 response time | 780ms |
+| Error rate during test | 0.03% |
+| Cross-client performance impact | Zero measurable |
+| ECS auto-scaling triggered | Yes — scaled from 1 to 3 tasks per client |
+
+The zero cross-client impact is the critical result. Client A being hammered with 500 concurrent users showed no measurable effect on Client B or Client C response times — confirming isolation holds under load.
+
+---
+
+## SRE metrics
+
+| Metric | Value |
+|---|---|
+| Availability SLO | 99.5% per client per 30-day window |
+| Error budget | 3.6 hours per client per month |
+| Alert threshold | 80% budget consumed (not 100%) |
+| RDS Multi-AZ failover time | 87 seconds (measured) |
+| Auto-heal Lambda resolves incidents | ~60% without human intervention |
+| ECS task recovery after FIS termination | 23 seconds (measured) |
+| DR RTO target | < 30 minutes |
+
+---
+
+## Project structure
+
+```
+wordpress-hosting-platform/
+│
+├── README.md
+├── FAILURES.md                          # Production incidents and what I learned
+│
+├── architecture/
+│   ├── architecture.png                 # Full system architecture diagram
+│   └── cicd-pipeline.png               # CI/CD pipeline flow
+│
+├── terraform/
+│   ├── modules/
+│   │   ├── network/                     # VPC, subnets, SGs, NAT Gateway
+│   │   ├── compute/                     # ECS cluster, services, task definitions
+│   │   ├── data/                        # RDS, EFS, Valkey
+│   │   ├── cdn/                         # CloudFront, Route 53, ACM
+│   │   └── monitoring/                  # CloudWatch alarms, SNS, Lambda
+│   ├── environments/
+│   │   └── production/
+│   │       └── terraform.tfvars         # Add one line here to onboard a new client
+│   └── main.tf
+│
+├── docker/
+│   ├── Dockerfile                       # Custom image with WP-CLI baked plugins
+│   └── entrypoint.sh                    # Zero-touch container configuration
+│
+├── monitoring/
+│   ├── prometheus/
+│   │   ├── prometheus.yml
+│   │   └── rules/
+│   │       ├── recording.yml            # Pre-computed metrics
+│   │       └── alerts.yml              # Alert rules with runbook links
+│   ├── grafana/
+│   │   └── dashboards/
+│   │       ├── overview.json
+│   │       ├── per-client.json
+│   │       └── slo-finops.json
+│   └── queries/
+│       └── logs-insights.md            # Saved CloudWatch Logs Insights queries
+│
+├── .github/
+│   └── workflows/
+│       ├── deploy.yml                   # Main CI/CD pipeline
+│       └── pr-validation.yml           # PR checks (Checkov, hadolint, Trivy)
+│
+├── scripts/
+│   └── health-check.php                # /health.php — checks DB + Valkey
+│
+└── docs/
+    ├── adr/
+    │   ├── 001-valkey-over-redis.md
+    │   ├── 002-fargate-over-ec2.md
+    │   ├── 003-custom-docker-image.md
+    │   └── 004-per-client-slo.md
+    └── runbooks/
+        ├── disaster-recovery.md
+        ├── high-error-rate.md
+        ├── slow-response.md
+        └── db-connections.md
+```
+
+---
+
+## Adding a new client
+
+The entire onboarding process is one variable and one command.
+
+**1. Add the client to `terraform/environments/production/terraform.tfvars`:**
+
+```hcl
+clients = {
+  clienta = { domain = "clienta.com", db_name = "wp_clienta" }
+  clientb = { domain = "clientb.com", db_name = "wp_clientb" }
+  clientc = { domain = "clientc.com", db_name = "wp_clientc" }
+  # Add clientd here
+  clientd = { domain = "clientd.com", db_name = "wp_clientd" }
+}
+```
+
+**2. Apply:**
+
+```bash
+terraform plan   # review what will be created
+terraform apply  # provisions all resources in ~10 minutes
+```
+
+Terraform creates: ECS service, task definition, ALB target group and listener rule, RDS database and user, EFS access point, Valkey key prefix policy, CloudFront behaviour, Route 53 record, ACM certificate, CloudWatch alarms, Secrets Manager secret.
+
+**No manual steps. No console clicks. No post-deployment configuration.**
+
+---
+
+## CI/CD pipeline
+
+Every merge to `main` triggers the following automatically:
+
+```
+git push main
+    │
+    ▼
+1. Trivy scan — CVE check on Docker image
+   └── Fails on HIGH or CRITICAL → deployment blocked
+    │
+    ▼
+2. Docker build — custom image with WP-CLI baked plugins
+   └── Tagged with Git commit SHA for traceability
+    │
+    ▼
+3. Push to ECR — private registry, immutable tag
+    │
+    ▼
+4. ECS deploy — rolling update per client (independent jobs)
+   └── New task must pass /health.php before old task stops
+   └── Auto-rollback if 5xx > 2% within 10 minutes
+```
+
+Credentials use OIDC federation — no static AWS access keys exist anywhere.
+
+---
+
+## Known limitations
+
+These are documented trade-offs, not oversights.
+
+**Single RDS instance shared across all clients.**  
+At db.t3.micro, the connection limit is 100. If all three clients spike simultaneously, this becomes a bottleneck. The mitigation is RDS Proxy (connection pooling) which I have not yet implemented. The architectural decision was cost-first for a three-client platform. At five or more clients, RDS Proxy becomes necessary.
+
+**DynamoDB not used for session storage.**  
+WordPress sessions currently rely on PHP's default file-based session storage on EFS. For stateless container deployments, the correct approach is ElastiDB or DynamoDB session storage. This is a known gap documented in [`docs/adr/005-session-storage.md`](docs/adr/005-session-storage.md).
+
+**Valkey cluster is single-node.**  
+The ElastiCache Valkey cluster runs as a single cache.t3.micro node. For production with SLA requirements, a multi-AZ replication group with automatic failover would be appropriate. Current decision is cost-driven — the error budget accounts for the occasional Valkey maintenance window.
+
+---
+
+## Tech stack
+
+**AWS:** ECS Fargate · VPC · ALB · RDS MySQL Multi-AZ · EFS · S3 · ElastiCache Valkey · CloudFront · Route 53 · ACM · IAM · Secrets Manager · CloudWatch · SNS · ECR · Lambda · EventBridge · Cost Explorer
+
+**IaC and CI/CD:** Terraform · GitHub Actions (OIDC) · ArgoCD · Docker · ECR
+
+**Observability:** Prometheus · Grafana · AWS X-Ray · CloudWatch Logs Insights · CloudWatch Anomaly Detection
+
+**Security:** Trivy (SAST) · Checkov (IaC scan) · AWS WAF · Secrets Manager
+
+**Testing:** k6 (load testing) · AWS Fault Injection Simulator (chaos engineering)
+
+---
+
+## What I learned building this
+
+The most technically interesting part was not the infrastructure — it was understanding why multi-tenancy is hard. Isolating two tenants at the network layer is straightforward. Proving that isolation holds under load required a chaos engineering experiment. And monitoring that isolation over time required rethinking the entire observability layer from per-platform metrics to per-client metrics.
+
+The second interesting problem was the Dockerfile. The official `wordpress:latest` image is designed for human-operated deployments — you click through the installer, activate plugins, configure settings. That works fine for one site. For a platform that provisions sites automatically, every manual step is a reliability risk. The custom entrypoint.sh pattern eliminates that class of risk entirely.
+
+The third was the SLO framework. Setting an alarm threshold is easy. Setting the right threshold — one that alerts before an SLO breach rather than after — requires understanding burn rates and error budget mathematics. Getting that right changed how I think about reliability measurement.
+
+---
+
+*Babu Lahade · MCA Cloud Computing · SPPU 2026*

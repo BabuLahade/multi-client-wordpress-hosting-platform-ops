@@ -65,5 +65,5 @@ variable "alb_5xx_alarm"{
 }
 variable "ecs_memory_high" {
   description = "value"
-  type = string
+  type = map(string)
 }

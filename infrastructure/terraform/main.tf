@@ -253,6 +253,8 @@ module "cloudwatch" {
   db_instance_id = module.rds.db_instance_id
   alb_arn = module.alb.alb_arn
   cache_id = module.redis.cache_id
+  alb_arn_suffix = module.alb.alb_arn_suffix
+  # service_name = module.ECS.service_name
 
 }
 

@@ -5,6 +5,7 @@ resource "aws_cloudwatch_log_group" "wordpress_logs" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
+  for_each = toset(var.ecs_clients)
   alarm_name = "${var.project_name}-fargate-cpu-critical"
   comparison_operator = "GreaterThanThreshold"
   metric_name = "CPUUtilization"
@@ -17,16 +18,20 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
 
   dimensions = {
     ClusterName = var.cluster_name
+    # ServiceName = var.service_name[each.key]
+    ServiceName = "${var.project_name}-${each.key}-service"
   }
 
   alarm_actions = [var.sns_arn]
 # THE ALL-CLEAR: Send another email when the CPU drops back to normal!
   ok_actions = [var.sns_arn]
+  treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL: Fargate Cluster CPU has exceeded 85% for 2 minutes."
 }
 
 ## alarm for ecs memory  OOM kill
 resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
+  for_each = toset(var.ecs_clients)
   alarm_name = "${var.project_name}-fargate-memory-critical"
   comparison_operator = "GreaterThanThreshold"
   metric_name = "MemoryUtilization"
@@ -39,9 +44,12 @@ resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
 
   dimensions = {
     ClusterName = var.cluster_name
+    # ServiceName = var.service_name[each.key]
+    ServiceName = "${var.project_name}-${each.key}-service"
   }
   alarm_actions = [var.sns_arn]
   ok_actions = [var.sns_arn]
+  treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL: fargate memory >85% . container is risk at oom kill"
 }
 
@@ -70,7 +78,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
 resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   alarm_name = "${var.project_name}-ALB-5xx-spike"
   comparison_operator = "GreaterThanThreshold"
-  metric_name = "HTTP_Code_Target_5xx_count"
+  metric_name = "HTTPCode_Target_5XX_Count"
   namespace = "AWS/ApplicationELB"
   statistic = "Sum"
 
@@ -79,10 +87,11 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
   threshold = 10 ## alert if we get >10 alb 5XX error
 
   dimensions = {
-    LoadBalancer = var.alb_arn
+    LoadBalancer = var.alb_arn_suffix
   }
   alarm_actions = [var.sns_arn]
   ok_actions = [var.sns_arn]
+  treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL: ALB returning 5xx error . application code is failing "
 }
 
@@ -103,6 +112,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   }
   alarm_actions = [var.sns_arn]
   ok_actions = [var.sns_arn]
+  treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL: RDS Database connections are high"
 }
 
@@ -110,7 +120,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
 resource "aws_cloudwatch_metric_alarm" "cache_cpu_high" {
   alarm_name = "${var.project_name}-cache-cpu-high"
   comparison_operator = "GreaterThanThreshold"
-  metric_name = "EngineCPUUtilization"
+  metric_name = "CPUUtilization"
   namespace = "AWS/ElastiCache"
   statistic = "Average"
 
@@ -123,6 +133,7 @@ resource "aws_cloudwatch_metric_alarm" "cache_cpu_high" {
   }
   alarm_actions = [var.sns_arn]
   ok_actions = [var.sns_arn]
+  treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL :ElastiCache Engine CPU is at 90%"
 }
 # --- ALARM 7: ElastiCache Evictions (Memory Pressure) ---
@@ -142,6 +153,7 @@ resource "aws_cloudwatch_metric_alarm" "cache_evictions" {
   }
 
   alarm_actions = [var.sns_arn]
+  treat_missing_data = "notBreaching"
   alarm_description = "WARNING: Cache is full and evicting data. Consider upgrading the ElastiCache node type."
 }
 
@@ -165,7 +177,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
           metrics = [
                 ["AWS/ECS" , "CPUUtilization","ClusterName", var.cluster_name ]
           ]
-          view = "timeseries"
+          view = "timeSeries"
           stacked = false
           region = "eu-north-1"
           title = "Fargate CPU Utilization"
@@ -182,7 +194,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
           metrics = [
             ["AWS/ECS", "MemoryUtilization" , "ClusterName", var.cluster_name]
           ]
-          view = "timeseries"
+          view = "timeSeries"
           stacked = false
           region = "eu-north-1"
           title = "Fargate Memory Utilization"
@@ -199,7 +211,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
           metrics =[
             ["AWS/RDS","DatabaseConnections" , "DBInstanceIdentifier" , var.db_instance_id]
           ]
-          view = "timeseries"
+          view = "timeSeries"
           stacked = false 
           region = "eu-north-1"
           title = "RDS Database Connection"
@@ -216,7 +228,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
           metrics = [
             ["AWS/ApplicationELB","HTTPCode_Target_5XX_count","LoadBalancer",var.alb_arn]
           ]
-          view = "timeseries"
+          view = "timeSeries"
           stacked = false
           region = "eu-north-1"
           title = "ALB 5xx Errors (Application Failures)"

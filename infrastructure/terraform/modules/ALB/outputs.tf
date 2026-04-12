@@ -24,3 +24,6 @@ output "target_group_arn" {
 # output "target_group_arn" {
 #   value = aws_lb_target_group.client1_tg_ecs["client1"].arn
 # }
+output "alb_arn_suffix" {
+  value = aws_lb.alb.arn_suffix
+  }
