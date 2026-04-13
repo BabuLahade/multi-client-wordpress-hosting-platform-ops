@@ -6,7 +6,7 @@ resource "aws_cloudwatch_log_group" "wordpress_logs" {
 
 resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
   for_each = toset(var.ecs_clients)
-  alarm_name = "${var.project_name}-fargate-cpu-critical"
+  alarm_name = "${var.project_name}-${each.key}-fargate-cpu-critical"
   comparison_operator = "GreaterThanThreshold"
   metric_name = "CPUUtilization"
   namespace = "AWS/ECS"
@@ -32,7 +32,7 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
 ## alarm for ecs memory  OOM kill
 resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
   for_each = toset(var.ecs_clients)
-  alarm_name = "${var.project_name}-fargate-memory-critical"
+  alarm_name = "${var.project_name}-${each.key}fargate-memory-critical"
   comparison_operator = "GreaterThanThreshold"
   metric_name = "MemoryUtilization"
   namespace = "AWS/ECS"
@@ -62,16 +62,17 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   statistic = "Average"
 
   period = 300
-  evaluation_periods = 1
+  evaluation_periods = 2
   ## threshold calculation for storage space mesured in bytes
    # 5 GB = 5 * 1024 * 1024 * 1024 = 5368709120 bytes
   threshold = 5368709120
 
   dimensions = {
-    DBInstanceIdentifier = var.db_instance_id
+    DBInstanceIdentifier = "wordpress-hosting-db-instance"
   }
   alarm_actions = [var.sns_arn]
   ok_actions = [var.sns_arn]
+  treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL : RDS Database Storage space left < 5GB. "
 }
 ### alarm for 5xx error 
@@ -108,7 +109,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   threshold = 65 ## means alert at 65 connection i think our instance limit is 85 before it trigger
 
   dimensions = {
-    DBInstanceIdentifier = var.db_instance_id
+    DBInstanceIdentifier = "wordpress-hosting-db-instance"
   }
   alarm_actions = [var.sns_arn]
   ok_actions = [var.sns_arn]
@@ -120,7 +121,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
 resource "aws_cloudwatch_metric_alarm" "cache_cpu_high" {
   alarm_name = "${var.project_name}-cache-cpu-high"
   comparison_operator = "GreaterThanThreshold"
-  metric_name = "CPUUtilization"
+  metric_name = "EngineCPUUtilization"
   namespace = "AWS/ElastiCache"
   statistic = "Average"
 
@@ -129,7 +130,7 @@ resource "aws_cloudwatch_metric_alarm" "cache_cpu_high" {
   threshold = 90
 
   dimensions = {
-    CacheClusterId = var.cache_id
+    CacheClusterId = "wordpress-hosting-valkey-cluster-001"
   }
   alarm_actions = [var.sns_arn]
   ok_actions = [var.sns_arn]
@@ -149,7 +150,7 @@ resource "aws_cloudwatch_metric_alarm" "cache_evictions" {
   threshold           = 50 # Alert if 50+ items are deleted due to memory pressure
 
   dimensions = {
-    CacheClusterId = var.cache_id
+    CacheClusterId =  "wordpress-hosting-valkey-cluster-001"
   }
 
   alarm_actions = [var.sns_arn]
@@ -175,7 +176,8 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
         height = 6
         properties = {
           metrics = [
-                ["AWS/ECS" , "CPUUtilization","ClusterName", var.cluster_name ]
+                for client in var.ecs_clients :
+                ["AWS/ECS" , "CPUUtilization","ClusterName", var.cluster_name , "ServiceName" , "${var.project_name}-${client}-service" ]
           ]
           view = "timeSeries"
           stacked = false
@@ -192,7 +194,9 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
         height = 6
         properties = {
           metrics = [
-            ["AWS/ECS", "MemoryUtilization" , "ClusterName", var.cluster_name]
+          
+            for client in var.ecs_clients :
+            ["AWS/ECS", "MemoryUtilization" , "ClusterName", var.cluster_name , "ServiceName" , "${var.project_name}-${client}-service"]
           ]
           view = "timeSeries"
           stacked = false
@@ -209,7 +213,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
         height = 6
         properties = {
           metrics =[
-            ["AWS/RDS","DatabaseConnections" , "DBInstanceIdentifier" , var.db_instance_id]
+            ["AWS/RDS","DatabaseConnections" , "DBInstanceIdentifier" , "wordpress-hosting-db-instance"]
           ]
           view = "timeSeries"
           stacked = false 
@@ -226,7 +230,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
         height = 6
         properties ={
           metrics = [
-            ["AWS/ApplicationELB","HTTPCode_Target_5XX_count","LoadBalancer",var.alb_arn]
+            ["AWS/ApplicationELB","HTTPCode_Target_5XX_Count","LoadBalancer",var.alb_arn_suffix]
           ]
           view = "timeSeries"
           stacked = false
@@ -234,8 +238,41 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
           title = "ALB 5xx Errors (Application Failures)"
           stat = "Sum"
         }
-      }
+      } ,
+      {
+  type = "metric"
+  x = 0
+  y = 12
+  width = 12
+  height = 6
 
+  properties = {
+    metrics = [
+      ["AWS/ApplicationELB","RequestCount","LoadBalancer",var.alb_arn_suffix]
+    ]
+    view = "timeSeries"
+    region = "eu-north-1"
+    title = "ALB Request Count (Traffic)"
+    stat = "Sum"
+  }
+} ,
+
+{
+  type = "metric"
+  x = 12
+  y = 12
+  width = 12
+  height = 6
+
+  properties = {
+    metrics = [
+      ["AWS/ApplicationELB","TargetResponseTime","LoadBalancer",var.alb_arn_suffix]
+    ]
+    view = "timeSeries"
+    region = "eu-north-1"
+    title = "ALB Latency"
+  }
+}
 
     ]
   })

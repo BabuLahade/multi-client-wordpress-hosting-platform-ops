@@ -324,6 +324,10 @@
 
 resource "aws_ecs_cluster" "clients" {
   name = "${var.project_name}-cluster"
+  setting {
+    name = "containerInsights"
+    value = "enabled"
+  }
 }
 
 # resource "aws_cloudwatch_log_group" "wordpress_logs" {
