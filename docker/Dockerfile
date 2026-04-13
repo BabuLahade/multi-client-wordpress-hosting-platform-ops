@@ -47,5 +47,7 @@ COPY zero-touch.sh /usr/local/bin/zero-touch.sh
 RUN sed -i 's/\r$//' /usr/local/bin/zero-touch.sh
 RUN chmod +x /usr/local/bin/zero-touch.sh
 
+COPY scripts/health-check.php /var/www/html/health.php
+
 ENTRYPOINT ["/usr/local/bin/zero-touch.sh"]
 CMD ["php-fpm"]
