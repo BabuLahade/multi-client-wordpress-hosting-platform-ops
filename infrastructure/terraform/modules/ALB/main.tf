@@ -128,13 +128,13 @@ resource "aws_lb_target_group" "client1_tg_ecs" {
     vpc_id = var.vpc_id
     target_type = "ip"
     health_check {
-      path ="/health"
+      path ="/health.php"
       protocol = "HTTP"
       interval = 30
       timeout = 5
       healthy_threshold = 2
-      unhealthy_threshold = 5
-      matcher = "200-399"
+      unhealthy_threshold = 3
+      matcher = "200"
     }
 }
 
