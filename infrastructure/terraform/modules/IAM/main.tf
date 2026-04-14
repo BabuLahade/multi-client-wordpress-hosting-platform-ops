@@ -143,3 +143,38 @@ resource "aws_iam_role_policy" "ecs_secrets_policy" {
         }]
     })
 }
+
+#### grafana 
+# resource "aws_iam_user" "grafana_service" {
+#     name = "${var.project_name}-grafana"
+#     path = "/system/"
+# }
+
+# resource "aws_iam_policy" "grafana_cloudwatch_policy" {
+#     name = "${var.project_name}-grafana-cloudwatch-policy"
+#     description = "Allows Grafana Cloud to read CloudWatch metrics and logs"
+
+#     policy = jsonencode({
+#         Version = "2012-10-17"
+#         Statement = [
+#             {
+#                 Effect = "Allow"
+#                 Action = [
+#                     "cloudwatch:GetMetricData",
+#                     "cloudwatch:ListMetrics",
+#                     "cloudwatch:DescribeAlarms",
+#                     "logs:StartQuerry",
+#                     "logs:GetQuerryResults",
+#                     "logs:DescribeLogGroups"
+                    
+#                 ]
+#                 Resource = "*"
+#             }
+#         ]
+#     })
+# }
+# resource "aws_iam_user_policy_attachment" "grafana_attach" {
+#     user = aws_iam_user.grafana_service.name
+#     policy_arn = aws_iam_user.grafana_cloudwatch_policy.arn
+   
+# }

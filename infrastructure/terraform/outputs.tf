@@ -106,3 +106,13 @@ output "nameservers" {
     description = "The nameservers for the Route53 hosted zone"
   
 }
+# output "grafana_access_key_id" {
+#   value       = module.IAM.grafana_access_key_id
+#   description = "Copy this into Grafana CloudWatch config"
+# }
+
+# output "grafana_secret_access_key" {
+#   value       = module.IAM.grafana_secret_access_key
+#   description = "Copy this into Grafana CloudWatch config"
+#   sensitive   = true 
+# }

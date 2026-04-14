@@ -8,3 +8,13 @@ output "ecs_task_execution_role_arn" {
 output "ecs_task_role_arn" {
   value =aws_iam_role.ecs_task_role.arn
 }
+# output "grafana_access_key_id" {
+#   value       = aws_iam_access_key.grafana_keys.id
+#   description = "Copy this into Grafana CloudWatch config"
+# }
+
+# output "grafana_secret_access_key" {
+#   value       = aws_iam_access_key.grafana_keys.secret
+#   description = "Copy this into Grafana CloudWatch config"
+#   sensitive   = true 
+# }
