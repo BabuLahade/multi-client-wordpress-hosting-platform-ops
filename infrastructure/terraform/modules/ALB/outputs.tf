@@ -18,7 +18,7 @@ output "target_group_arns" {
 }
 output "target_group_arn" {
   value ={
-  for k , v in aws_lb_target_group.client1_tg_ecs : k => v.arn
+  for k , v in aws_lb_target_group.clients : k => v.arn
 }
 }
 # output "target_group_arn" {
@@ -27,3 +27,8 @@ output "target_group_arn" {
 output "alb_arn_suffix" {
   value = aws_lb.alb.arn_suffix
   }
+output "tg_arn_suffix" {
+  value = {
+    for k , v in aws_lb_target_group.clients : k => v.arn_suffix
+  }
+}

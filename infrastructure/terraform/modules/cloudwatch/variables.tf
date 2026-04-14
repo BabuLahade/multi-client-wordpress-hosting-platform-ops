@@ -11,7 +11,10 @@ variable "cluster_name" {
   description = "value"
   type = string
 }
-variable "sns_arn" {
+variable "sns_critical_arn" {
+  type = string
+}
+variable "sns_high_arn"{
   type = string
 }
 variable "db_instance_id" {
@@ -29,3 +32,6 @@ variable "alb_arn_suffix" {
 # variable "service_name" {
 #   type = map(string)
 # }
+variable "tg_arn_suffix" {
+  type = map(string)
+}

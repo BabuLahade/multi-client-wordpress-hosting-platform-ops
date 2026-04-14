@@ -100,7 +100,7 @@ resource "aws_lb" "alb" {
 #     }
 # }
 
-resource "aws_lb_target_group" "clients" {
+resource "aws_lb_target_group" "client" {
     for_each = toset(var.ec2_clients)
     name = "tg-${each.key}"
     port =80
@@ -118,7 +118,7 @@ resource "aws_lb_target_group" "clients" {
       unhealthy_threshold = 2
     }
 }
-resource "aws_lb_target_group" "client1_tg_ecs" {
+resource "aws_lb_target_group" "clients" {
     for_each = toset(var.ecs_clients)
 
     name = "${each.key}-tg-ecs"
@@ -211,7 +211,7 @@ resource "aws_lb_listener_rule" "clients"{
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.clients[each.key].arn
+    target_group_arn = aws_lb_target_group.client[each.key].arn
   }
 }
 ##listener rule for ecs service
@@ -227,7 +227,7 @@ resource "aws_lb_listener_rule" "ecs_clients" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.client1_tg_ecs[each.key].arn
+    target_group_arn = aws_lb_target_group.clients[each.key].arn
   }
 }
 # # --- NEW RULE FOR YOUR REAL DOMAIN ---
@@ -265,7 +265,7 @@ resource "aws_lb_listener_rule" "production" {
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.client1_tg_ecs[each.key].arn
+    target_group_arn = aws_lb_target_group.clients[each.key].arn
   }
 }
 

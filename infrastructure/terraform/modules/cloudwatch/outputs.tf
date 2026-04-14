@@ -4,7 +4,9 @@ output "cloudwatch_log_group_name" {
     }
 }
 output "alb_5xx_alarm" {
-    value = aws_cloudwatch_metric_alarm.alb_5xx_errors.alarm_name
+    value ={
+        for k , v in aws_cloudwatch_metric_alarm.alb_5xx_errors : k=>v.name
+    }
 
 }
 output "ecs_memory_high" {

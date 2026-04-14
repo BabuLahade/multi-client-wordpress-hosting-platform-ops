@@ -249,7 +249,9 @@ module "cloudwatch" {
   project_name = var.project_name
   ecs_clients = var.ecs_clients
   cluster_name = module.ECS.cluster_name
-  sns_arn = module.SNS.sns_arn
+  sns_critical_arn = module.SNS.sns_critical_arn
+  sns_high_arn = module.SNS.sns_high_arn
+  tg_arn_suffix = module.alb.tg_arn_suffix
   db_instance_id = module.rds.db_instance_id
   alb_arn = module.alb.alb_arn
   cache_id = module.redis.cache_id

@@ -22,9 +22,9 @@ resource "aws_cloudwatch_metric_alarm" "ecs_cpu_high" {
     ServiceName = "${var.project_name}-${each.key}-service"
   }
 
-  alarm_actions = [var.sns_arn]
+  alarm_actions = [var.sns_critical_arn]
 # THE ALL-CLEAR: Send another email when the CPU drops back to normal!
-  ok_actions = [var.sns_arn]
+  ok_actions = [var.sns_critical_arn]
   treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL: Fargate Cluster CPU has exceeded 85% for 2 minutes."
 }
@@ -47,8 +47,8 @@ resource "aws_cloudwatch_metric_alarm" "ecs_memory_high" {
     # ServiceName = var.service_name[each.key]
     ServiceName = "${var.project_name}-${each.key}-service"
   }
-  alarm_actions = [var.sns_arn]
-  ok_actions = [var.sns_arn]
+  alarm_actions = [var.sns_critical_arn]
+  ok_actions = [var.sns_critical_arn]
   treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL: fargate memory >85% . container is risk at oom kill"
 }
@@ -70,50 +70,80 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   dimensions = {
     DBInstanceIdentifier = "wordpress-hosting-db-instance"
   }
-  alarm_actions = [var.sns_arn]
-  ok_actions = [var.sns_arn]
+  alarm_actions = [var.sns_critical_arn]
+  ok_actions = [var.sns_critical_arn]
   treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL : RDS Database Storage space left < 5GB. "
 }
 ### alarm for 5xx error 
 resource "aws_cloudwatch_metric_alarm" "alb_5xx_errors" {
-  alarm_name = "${var.project_name}-ALB-5xx-spike"
+  for_each = toset(var.ecs_clients)
+  alarm_name = "${var.project_name}-ALB-5xx-spike-${each.key}"
   comparison_operator = "GreaterThanThreshold"
   metric_name = "HTTPCode_Target_5XX_Count"
   namespace = "AWS/ApplicationELB"
   statistic = "Sum"
 
-  period = 60
+  period = 300
   evaluation_periods = 1
-  threshold = 10 ## alert if we get >10 alb 5XX error
-
+  threshold = 5 ## alert if we get >10 alb 5XX error
+  # This dimension is what makes it per-client — each client has its own target group
   dimensions = {
     LoadBalancer = var.alb_arn_suffix
+    TargetGroup  = var.tg_arn_suffix[each.key]
+
   }
-  alarm_actions = [var.sns_arn]
-  ok_actions = [var.sns_arn]
+  alarm_actions = [var.sns_critical_arn]
+  ok_actions = [var.sns_critical_arn]
   treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL: ALB returning 5xx error . application code is failing "
 }
+# ── ALARM 2: No healthy tasks ────────────────────────────────────────────
+# Fires when: ALL ECS tasks for one client fail the health check
+# Means: site is completely unreachable for that client
+resource "aws_cloudwatch_metric_alarm" "no_healthy_tasks" {
+  for_each = toset(var.ecs_clients)
+
+  alarm_name          = "CRITICAL-${each.key}-no-healthy-tasks"
+  alarm_description   = "Client ${each.key}: zero tasks passing health check"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "HealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Minimum"
+  threshold           = 1  # alarm if healthy count drops below 1
+
+  dimensions = {
+    LoadBalancer =  var.alb_arn_suffix
+    TargetGroup  = var.tg_arn_suffix[each.key]
+  }
+
+  alarm_actions = [var.sns_critical_arn]
+  ok_actions    = [var.sns_critical_arn]
+}
+
 
 ### RDS connection Exhaust
 resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   alarm_name = "${var.project_name}-RDS-High-Connections"
-  comparison_operator = "GreaterThanThreshold"
+  comparison_operator = "LessThanThreshold"
   metric_name = "DatabaseConnections"
   namespace = "AWS/RDS"
   statistic = "Average"
 
   period = 60
   evaluation_periods = 2
-  threshold = 65 ## means alert at 65 connection i think our instance limit is 85 before it trigger
+  threshold = 2 ## means alert at 65 connection i think our instance limit is 85 before it trigger
 
   dimensions = {
     DBInstanceIdentifier = "wordpress-hosting-db-instance"
   }
-  alarm_actions = [var.sns_arn]
-  ok_actions = [var.sns_arn]
-  treat_missing_data = "notBreaching"
+  alarm_actions = [var.sns_critical_arn]
+
+  ok_actions = [var.sns_critical_arn]
+
+  treat_missing_data = "breaching"
   alarm_description = "CRITICAL: RDS Database connections are high"
 }
 
@@ -132,8 +162,8 @@ resource "aws_cloudwatch_metric_alarm" "cache_cpu_high" {
   dimensions = {
     CacheClusterId = "wordpress-hosting-valkey-cluster-001"
   }
-  alarm_actions = [var.sns_arn]
-  ok_actions = [var.sns_arn]
+  alarm_actions = [var.sns_critical_arn]
+  ok_actions = [var.sns_critical_arn]
   treat_missing_data = "notBreaching"
   alarm_description = "CRITICAL :ElastiCache Engine CPU is at 90%"
 }
@@ -153,7 +183,7 @@ resource "aws_cloudwatch_metric_alarm" "cache_evictions" {
     CacheClusterId =  "wordpress-hosting-valkey-cluster-001"
   }
 
-  alarm_actions = [var.sns_arn]
+  alarm_actions = [var.sns_critical_arn]
   treat_missing_data = "notBreaching"
   alarm_description = "WARNING: Cache is full and evicting data. Consider upgrading the ElastiCache node type."
 }
