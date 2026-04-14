@@ -685,7 +685,7 @@ resource "aws_ecs_service" "clients" {
     alarm_names = [
     
       var.ecs_memory_high[each.key],
-      var.alb_5xx_alarm 
+      var.alb_5xx_alarm[each.key]
     ]
   }
 }

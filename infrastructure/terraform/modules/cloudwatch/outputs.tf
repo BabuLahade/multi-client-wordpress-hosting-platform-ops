@@ -5,7 +5,7 @@ output "cloudwatch_log_group_name" {
 }
 output "alb_5xx_alarm" {
     value ={
-        for k , v in aws_cloudwatch_metric_alarm.alb_5xx_errors : k=>v.name
+        for k , v in aws_cloudwatch_metric_alarm.alb_5xx_errors : k=>v.alarm_name
     }
 
 }

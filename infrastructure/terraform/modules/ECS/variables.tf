@@ -61,7 +61,7 @@ variable "cloudwatch_log_group_name" {
 }
 variable "alb_5xx_alarm"{
   description = "value"
-  type = string
+  type = map(string)
 }
 variable "ecs_memory_high" {
   description = "value"
