@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "Copying SRE health check..."
+cp /tmp/health.php /var/www/html/health.php || true
+
 # Start the official WordPress entrypoint in the background
 /usr/local/bin/docker-entrypoint.sh "$@" &
 WP_PID=$!

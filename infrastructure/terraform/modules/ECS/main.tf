@@ -580,10 +580,7 @@ resource "aws_ecs_task_definition" "clients" {
           condition      = "SUCCESS"
         }
       ]
-      command = [
-        "sh", "-c",
-        "cp /tmp/health.php /var/www/html/health.php && php-fpm"
-      ]
+      
       # FIXED: Mount the entire HTML folder
       mountPoints = [
         {
