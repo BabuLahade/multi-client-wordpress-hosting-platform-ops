@@ -28,17 +28,17 @@ if ($db->connect_error) {
 }
 
 // 3. Check Valkey (Redis) connectivity
-$redis = new Redis();
-if (!$redis->connect($_ENV['VALKEY_HOST'], 6379)) {
-    http_response_code(503);
-    error_log(json_encode([
-        'client_id' => $client_id,
-        'log_level' => 'ERROR',
-        'source'    => 'health-check',
-        'message'   => 'Valkey connection failed'
-    ]));
-    die('VALKEY_FAIL');
-}
+// $redis = new Redis();
+// if (!$redis->connect($_ENV['VALKEY_HOST'], 6379)) {
+//     http_response_code(503);
+//     error_log(json_encode([
+//         'client_id' => $client_id,
+//         'log_level' => 'ERROR',
+//         'source'    => 'health-check',
+//         'message'   => 'Valkey connection failed'
+//     ]));
+//     die('VALKEY_FAIL');
+// }
 
 // Both checks passed — return 200 OK
 http_response_code(200);

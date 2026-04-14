@@ -49,6 +49,14 @@ wp config set AS3CF_AWS_USE_EC2_IAM_ROLE true --raw --allow-root
 if [ -n "$VALKEY_HOST" ]; then
     wp config set WP_REDIS_HOST "$VALKEY_HOST" --allow-root
     wp config set WP_REDIS_PORT 6379 --raw --allow-root
+
+    if [ -n "$CLIENT_ID" ]; then
+        echo "Applying Redis cache isolation for client: $CLIENT_ID"
+        wp config set WP_CACHE_KEY_SALT "${CLIENT_ID}_" --allow-root
+        wp config set WP_REDIS_PREFIX "${CLIENT_ID}_" --allow-root
+    else
+        echo "WARNING: CLIENT_ID is not set! Cache is NOT isolated."
+    fi
 fi
 
 wp plugin activate redis-cache amazon-s3-and-cloudfront --path=/var/www/html --allow-root
