@@ -187,7 +187,10 @@ resource "aws_cloudwatch_metric_alarm" "cache_evictions" {
   treat_missing_data = "notBreaching"
   alarm_description = "WARNING: Cache is full and evicting data. Consider upgrading the ElastiCache node type."
 }
-
+# resource "aws_cloudwatch_metric_alarm" "requestcount" {
+#   alarm_name = "${var.project_name}-request-count"
+#   comparison_operator = 
+# }
 
 #########3 dashboard for those 
 
@@ -202,7 +205,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
         type = "metric"
         x = 0
         y = 0
-        width = 12
+        width = 8
         height = 6
         properties = {
           metrics = [
@@ -220,7 +223,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
         type = "metric"
         x = 12
         y = 0
-        width = 12
+        width = 8
         height = 6
         properties = {
           metrics = [
@@ -239,7 +242,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
         type = "metric"
         x = 0
         y = 6
-        width = 12
+        width = 8
         height = 6
         properties = {
           metrics =[
@@ -256,7 +259,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
         type = "metric"
         x = 12
         y = 6
-        width = 12
+        width =8
         height = 6
         properties ={
           metrics = [
@@ -273,7 +276,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
   type = "metric"
   x = 0
   y = 12
-  width = 12
+  width = 8
   height = 6
 
   properties = {
@@ -291,7 +294,7 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
   type = "metric"
   x = 12
   y = 12
-  width = 12
+  width = 8
   height = 6
 
   properties = {
