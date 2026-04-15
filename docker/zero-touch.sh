@@ -20,11 +20,27 @@ cp /tmp/health.php /var/www/html/health.php || true
         chown www-data:www-data /var/www/html/wp-config.php
     fi
 
-    # Wait for the user to finish the web installation
-    echo "Waiting for WordPress tables to be installed..."
-    until wp core is-installed --path=/var/www/html --allow-root > /dev/null 2>&1; do
-      sleep 10
-    done
+    # # Wait for the user to finish the web installation
+    # echo "Waiting for WordPress tables to be installed..."
+    # until wp core is-installed --path=/var/www/html --allow-root > /dev/null 2>&1; do
+    #   sleep 10
+    # done
+    # Check if WordPress is installed. If not, install it automatically!
+    # Check if WordPress is installed. If not, install it automatically!
+    if ! wp core is-installed --path=/var/www/html --allow-root; then
+        echo "Installing WordPress automatically for ${CLIENT_ID}..."
+        
+        # SRE FIX: Dynamically inject the Client ID into the Title and Email
+        wp core install \
+            --path=/var/www/html \
+            --url="https://${CLIENT_ID}.babu-lahade.online" \
+            --title="Managed Hosting: ${CLIENT_ID}" \
+            --admin_user="admin" \
+            --admin_password="StrongPassword@321" \
+            --admin_email="admin@${CLIENT_ID}.com" \
+            --skip-email \
+            --allow-root
+    fi
 
     echo "WordPress is fully installed! Running Zero-Touch configurations..."
 
