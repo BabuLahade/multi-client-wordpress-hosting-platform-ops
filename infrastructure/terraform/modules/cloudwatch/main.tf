@@ -134,7 +134,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_connections" {
 
   period = 60
   evaluation_periods = 2
-  threshold = 2 ## means alert at 65 connection i think our instance limit is 85 before it trigger
+  threshold = 65 ## means alert at 65 connection i think our instance limit is 85 before it trigger
 
   dimensions = {
     DBInstanceIdentifier = "wordpress-hosting-db-instance"
@@ -360,8 +360,55 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
 # }
 
 #### ERROR RATE % ALARM 
+# resource "aws_cloudwatch_metric_alarm" "error_rate" {
+#   for_each = toset(var.ecs_clients) # FIXED: Changed from project_name to ecs_clients
+
+#   alarm_name          = "${var.project_name}-${each.key}-error_rate"
+#   comparison_operator = "GreaterThanThreshold"
+#   evaluation_periods  = 1
+#   threshold           = 0.5
+#   alarm_description   = "Error rate > 0.5% for ${each.key}"
+
+#   alarm_actions = [var.sns_critical_arn]
+
+#   metric_query {
+#     id = "errors"
+#     metric {
+#       namespace   = "AWS/ApplicationELB" # FIXED: Spelling typo
+#       metric_name = "HTTPCode_Target_5XX_Count"
+#       stat        = "Sum"
+#       period      = 300
+
+#       dimensions = {
+#         TargetGroup = var.tg_arn_suffix[each.key]
+#       }
+#     }
+#   }
+  
+#   metric_query {
+#     id = "requests"
+#     metric {
+#       namespace   = "AWS/ApplicationELB"
+#       metric_name = "RequestCount"
+#       stat        = "Sum"
+#       period      = 300
+
+#       dimensions = {
+#         TargetGroup = var.tg_arn_suffix[each.key]
+#       }
+#     }
+#   }
+  
+#   metric_query {
+#     id          = "error_rate"
+#     expression  = "(errors/MAX([requests,1])) * 100"
+#     label       = "${each.key} error rate"
+#     return_data = true
+#   }
+# }
+#### ERROR RATE % ALARM 
 resource "aws_cloudwatch_metric_alarm" "error_rate" {
-  for_each = toset(var.ecs_clients) # FIXED: Changed from project_name to ecs_clients
+  for_each = var.tg_arn_suffix 
 
   alarm_name          = "${var.project_name}-${each.key}-error_rate"
   comparison_operator = "GreaterThanThreshold"
@@ -372,21 +419,26 @@ resource "aws_cloudwatch_metric_alarm" "error_rate" {
   alarm_actions = [var.sns_critical_arn]
 
   metric_query {
-    id = "errors"
+    id          = "errors"
+    return_data = false # FIX 1: Hides this raw data from the alarm trigger
+    
     metric {
-      namespace   = "AWS/ApplicationELB" # FIXED: Spelling typo
+      namespace   = "AWS/ApplicationELB"
       metric_name = "HTTPCode_Target_5XX_Count"
       stat        = "Sum"
       period      = 300
 
       dimensions = {
-        TargetGroup = var.tg_arn_suffix[each.key]
+      
+        TargetGroup = each.value 
       }
     }
   }
   
   metric_query {
-    id = "requests"
+    id          = "requests"
+    return_data = false # FIX 1: Hides this raw data from the alarm trigger
+    
     metric {
       namespace   = "AWS/ApplicationELB"
       metric_name = "RequestCount"
@@ -394,16 +446,17 @@ resource "aws_cloudwatch_metric_alarm" "error_rate" {
       period      = 300
 
       dimensions = {
-        TargetGroup = var.tg_arn_suffix[each.key]
+        TargetGroup = each.value
       }
     }
   }
   
   metric_query {
     id          = "error_rate"
-    expression  = "(errors/MAX([requests,1])) * 100"
+    # FIX 2: Replaced MAX() with IF() to satisfy AWS CloudWatch Math rules
+    expression  = "IF(requests > 0, (errors/requests)*100, 0)"
     label       = "${each.key} error rate"
-    return_data = true
+    return_data = true  # FIX 1: This is the ONLY metric allowed to trigger the alarm
   }
 }
 resource "aws_cloudwatch_metric_alarm" "alb_latency" {
@@ -422,8 +475,10 @@ resource "aws_cloudwatch_metric_alarm" "alb_latency" {
   period      = 300
 
   dimensions = {
+    LoadBalancer = var.alb_arn_suffix
     TargetGroup = var.tg_arn_suffix[each.value]
   }
+  treat_missing_data = "notBreaching"
 }
 
 resource "aws_cloudwatch_metric_alarm" "ecs_tasks_down" {
@@ -721,7 +776,7 @@ resource "aws_cloudwatch_dashboard" "sre_dashboard_1" {
 # Budget warning alarm — fires when < 20% remaining
 resource "aws_cloudwatch_metric_alarm" "budget_low" {
   # SRE FIX: Loop directly over the map!
-  for_each = var.tg_arn_suffix 
+  for_each = var.tg_arn_suffix
 
   alarm_name          = "WARN-${each.key}-budget-80pct-consumed"
   alarm_description   = "${each.key}: 80% of monthly error budget consumed"
@@ -741,33 +796,33 @@ resource "aws_cloudwatch_metric_alarm" "budget_low" {
 }
 
 #### ERROR RATE % ALARM 
-resource "aws_cloudwatch_metric_alarm" "error_rate_1" {
-  # SRE FIX: Loop directly over the map!
-  for_each = var.tg_arn_suffix 
+# resource "aws_cloudwatch_metric_alarm" "error_rate_1" {
+#   # SRE FIX: Loop directly over the map!
+#   for_each = var.tg_arn_suffix 
 
-  alarm_name          = "${var.project_name}-${each.key}-error_rate_1"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  threshold           = 0.5
-  alarm_description   = "Error rate > 0.5% for ${each.key}"
+#   alarm_name          = "${var.project_name}-${each.key}-error_rate_1"
+#   comparison_operator = "GreaterThanThreshold"
+#   evaluation_periods  = 1
+#   threshold           = 0.5
+#   alarm_description   = "Error rate > 0.5% for ${each.key}"
 
-  alarm_actions = [var.sns_critical_arn]
+#   alarm_actions = [var.sns_critical_arn]
 
-  metric_query {
-    id = "errors"
-    metric {
-      namespace   = "AWS/ApplicationELB"
-      metric_name = "HTTPCode_Target_5XX_Count"
-      stat        = "Sum"
-      period      = 300
+#   metric_query {
+#     id = "errors"
+#     metric {
+#       namespace   = "AWS/ApplicationELB"
+#       metric_name = "HTTPCode_Target_5XX_Count"
+#       stat        = "Sum"
+#       period      = 300
 
-      dimensions = {
-        TargetGroup = each.value # SRE FIX: each.value is "targetgroup/..."
-      }
-    }
-  }
-  # ... (Repeat the each.value logic for the requests metric query)
-}
+#       dimensions = {
+#         TargetGroup = each.value # SRE FIX: each.value is "targetgroup/..."
+#       }
+#     }
+#   }
+#   # ... (Repeat the each.value logic for the requests metric query)
+# }
 
 
 ##### event bridge 
