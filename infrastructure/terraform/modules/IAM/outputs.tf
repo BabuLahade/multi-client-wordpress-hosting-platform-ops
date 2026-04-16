@@ -18,3 +18,7 @@ output "ecs_task_role_arn" {
 #   description = "Copy this into Grafana CloudWatch config"
 #   sensitive   = true 
 # }
+
+output "lambda_role_arn" {
+  value = aws_iam_role.lambda_error_budget.arn
+}

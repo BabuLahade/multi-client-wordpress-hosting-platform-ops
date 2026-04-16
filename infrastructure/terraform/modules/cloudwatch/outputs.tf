@@ -14,3 +14,7 @@ output "ecs_memory_high" {
         for k , v in aws_cloudwatch_metric_alarm.ecs_memory_high : k=>v.alarm_name
     }
 }
+
+output "cloudwatch_event_arn" {
+    value = aws_cloudwatch_event_rule.hourly.arn
+}

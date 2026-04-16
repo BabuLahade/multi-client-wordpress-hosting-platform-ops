@@ -178,3 +178,42 @@ resource "aws_iam_role_policy" "ecs_secrets_policy" {
 #     policy_arn = aws_iam_user.grafana_cloudwatch_policy.arn
    
 # }
+
+resource "aws_iam_role" "lambda_error_budget" {
+  name = "${var.project_name}-error-budget-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "lambda.amazonaws.com"
+      }
+    }]
+  })
+}
+
+# 3. Allow Lambda to write logs to CloudWatch
+resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
+  role       = aws_iam_role.lambda_error_budget.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+# 4. Allow Lambda to read/write your custom metrics
+resource "aws_iam_role_policy" "lambda_metrics_access" {
+  name = "${var.project_name}-error-budget-metrics-policy"
+  role = aws_iam_role.lambda_error_budget.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "cloudwatch:GetMetricStatistics",
+        "cloudwatch:PutMetricData"
+      ]
+      Resource = "*" # CloudWatch metrics don't use specific ARNs
+    }]
+  })
+}

@@ -257,6 +257,7 @@ module "cloudwatch" {
   cache_id = module.redis.cache_id
   alb_arn_suffix = module.alb.alb_arn_suffix
   # service_name = module.ECS.service_name
+  error_budget_arn = module.lambda.error_budget_arn
 
 }
 
@@ -274,4 +275,13 @@ module "WAF" {
 module "SNS" {
   source = "./modules/SNS"
   project_name = var.project_name
+}
+
+module "lambda" {
+  source = "./modules/lambda"
+  project_name = var.project_name
+  tg_arn_suffix = module.alb.tg_arn_suffix
+  lambda_role_arn = module.IAM.lambda_role_arn
+  cloudwatch_event_arn = module.cloudwatch.cloudwatch_event_arn
+
 }

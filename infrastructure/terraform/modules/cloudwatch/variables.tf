@@ -35,3 +35,6 @@ variable "alb_arn_suffix" {
 variable "tg_arn_suffix" {
   type = map(string)
 }
+variable "error_budget_arn" {
+  type = string
+}

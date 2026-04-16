@@ -310,3 +310,484 @@ resource "aws_cloudwatch_dashboard" "main_dashbpard" {
     ]
   })
 }
+
+##### alarms 
+#### ERROR RATE % ALARM 
+# resource "aws_cloudwatch_metric_alarm" "error_rate" {
+#   for_each = toset(var.project_name)
+#   alarm_name = "${var.project_name}-${each.key}-error_rate"
+#   comparison_operator = "GreaterThanThreshold"
+#   evaluation_periods  = 1
+#   threshold           = 0.5
+#   alarm_description   = "Error rate > 0.5% for ${each.key}"
+
+#   alarm_actions = [var.sns_critical_arn]
+
+#   metric_query {
+#     id = "errors"
+#     metric {
+#       namespace = "AWS/AppliccationELB"
+#       metric_name = "HTTPCode_Target_5XX_Count"
+#       stat = "Sum"
+#       period = 300
+
+#       dimensions = {
+#         TargetGroup = var.tg_arn_suffix[each.key]
+#       }
+#     }
+#   }
+#   metric_query {
+#     id = "requests"
+#     metric {
+#       namespace   = "AWS/ApplicationELB"
+#       metric_name = "RequestCount"
+#       stat        = "Sum"
+#       period      = 300
+
+#       dimensions = {
+#         TargetGroup = var.tg_arn_suffix[each.key]
+#       }
+#     }
+#   }
+#   metric_query {
+#     id = "error_rate"
+#     expression = "(errors/MAX([requests,1])) * 100"
+#     label = "${each.key} error rate"
+#     return_data = true
+#   }
+
+
+# }
+
+#### ERROR RATE % ALARM 
+resource "aws_cloudwatch_metric_alarm" "error_rate" {
+  for_each = toset(var.ecs_clients) # FIXED: Changed from project_name to ecs_clients
+
+  alarm_name          = "${var.project_name}-${each.key}-error_rate"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  threshold           = 0.5
+  alarm_description   = "Error rate > 0.5% for ${each.key}"
+
+  alarm_actions = [var.sns_critical_arn]
+
+  metric_query {
+    id = "errors"
+    metric {
+      namespace   = "AWS/ApplicationELB" # FIXED: Spelling typo
+      metric_name = "HTTPCode_Target_5XX_Count"
+      stat        = "Sum"
+      period      = 300
+
+      dimensions = {
+        TargetGroup = var.tg_arn_suffix[each.key]
+      }
+    }
+  }
+  
+  metric_query {
+    id = "requests"
+    metric {
+      namespace   = "AWS/ApplicationELB"
+      metric_name = "RequestCount"
+      stat        = "Sum"
+      period      = 300
+
+      dimensions = {
+        TargetGroup = var.tg_arn_suffix[each.key]
+      }
+    }
+  }
+  
+  metric_query {
+    id          = "error_rate"
+    expression  = "(errors/MAX([requests,1])) * 100"
+    label       = "${each.key} error rate"
+    return_data = true
+  }
+}
+resource "aws_cloudwatch_metric_alarm" "alb_latency" {
+  for_each = toset(var.ecs_clients)
+
+  alarm_name          = "${var.project_name}-${each.key}-latency-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  threshold           = 2
+
+  alarm_actions = [var.sns_critical_arn]
+
+  metric_name = "TargetResponseTime"
+  namespace   = "AWS/ApplicationELB"
+  extended_statistic = "p99"
+  period      = 300
+
+  dimensions = {
+    TargetGroup = var.tg_arn_suffix[each.value]
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "ecs_tasks_down" {
+  for_each = toset(var.ecs_clients)
+
+  alarm_name          = "${var.project_name}-${each.key}-tasks-down"
+  comparison_operator = "LessThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  threshold           = 0
+
+  alarm_actions = [var.sns_critical_arn]
+
+  metric_name = "RunningTaskCount"
+  namespace   = "ECS/ContainerInsights"
+  statistic   = "Average"
+  period      = 300
+
+  dimensions = {
+    ClusterName = var.cluster_name
+    ServiceName = "wordpress-hosting-${each.key}-service"
+  }
+}
+
+####### Dashboard
+# resource "aws_cloudwatch_dashboard" "sre_dashboard" {
+#   dashboard_name = "${var.project_name}-sre-dashboard"
+
+#   dashboard_body = jsonencode({
+#     widgets = flatten([
+#       for client, tg in var.ecs_clients : {
+#         type   = "metric"
+#         # Safely calculates X grid coordinates
+#         x      = (index(keys(var.ecs_clients), client) % 3) * 8 
+#         y      = 0
+#         width  = 8
+#         height = 6
+
+#         properties = {
+#           title  = "${client} Error Rate (%)"
+#           view   = "singleValue"
+#           region = "eu-north-1"
+#           period = 3600
+
+#           metrics = [
+#             [
+#               {
+#                 expression = "(m1/m2)*100",
+#                 label      = "${client} error %",
+#                 id         = "e1",
+#                 stat       = "Sum" # Added stat here to ensure the math evaluates correctly
+#               }
+#             ],
+#             [
+#               "AWS/ApplicationELB",
+#               "HTTPCode_Target_5XX_Count",
+#               "TargetGroup",
+#               tg,
+#               { id = "m1", stat = "Sum", period = 3600, visible = false } # Added visible = false
+#             ],
+#             [
+#               ".",
+#               "RequestCount",
+#               ".",
+#               ".",
+#               { id = "m2", stat = "Sum", period = 3600, visible = false } # Added visible = false
+#             ]
+#           ]
+#         }
+#       }
+#     ])
+#   })
+# }
+
+resource "aws_cloudwatch_dashboard" "sre_dashboard" {
+  dashboard_name = "${var.project_name}-sre-dashboard"
+
+  dashboard_body = jsonencode({
+    widgets = flatten([
+      # SRE FIX 1: Use idx and client for a list
+      for idx, client in var.ecs_clients : { 
+        type   = "metric"
+        # SRE FIX 2: Use the idx directly for math. No keys() needed!
+        x      = (idx % 3) * 8 
+        y      = 0
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "${client} Error Rate (%)"
+          view   = "singleValue"
+          region = "eu-north-1"
+          period = 3600
+
+          metrics = [
+            [
+              {
+                expression = "(m1/m2)*100",
+                label      = "${client} error %",
+                id         = "e1",
+                stat       = "Sum"
+              }
+            ],
+            [
+              "AWS/ApplicationELB",
+              "HTTPCode_Target_5XX_Count",
+              "TargetGroup",
+              # SRE FIX 3: Look up the Target Group string using the client name
+              var.tg_arn_suffix[client], 
+              { id = "m1", stat = "Sum", period = 3600, visible = false }
+            ],
+            [
+              ".",
+              "RequestCount",
+              ".",
+              ".",
+              { id = "m2", stat = "Sum", period = 3600, visible = false }
+            ]
+          ]
+        }
+      }
+    ])
+  })
+}
+##################################
+#             SLO              ###
+#######################3##########
+
+# error budget is 0.5% of requests per month per client = 3.6 hours.
+
+# Burn rate = how fast you are consuming that budget compared to normal.
+
+# Normal rate (1x): budget depletes over exactly 30 days. Fine.
+# Fast burn (14x): at current error rate, ENTIRE 30-day budget consumed in 2 hours. Crisis.
+# Slow burn (6x): budget consumed in 5 days. Not a crisis but will miss the SLO if unaddressed.
+
+# Fast burn alarm: fires if error rate > 7% in last 1 hour (7% = 14 × 0.5%).
+# Slow burn alarm: fires if error rate > 3% sustained over 6 hours (3% = 6 × 0.5%).
+
+
+#### FAST BURN ALARM
+resource "aws_cloudwatch_metric_alarm" "slo_fast_burn" {
+  for_each = toset(var.ecs_clients)
+
+    alarm_name          = "CRITICAL-${each.key}-slo-fast-burn"
+  alarm_description   = "${each.key}: burning error budget 14x faster than allowed"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  threshold           = 7
+  treat_missing_data  = "notBreaching"
+
+  metric_query {
+    id          = "error_rate_1h"
+    expression  = "(errors_1h / total_1h) * 100"
+    label       = "Error rate % (1h window)"
+    return_data = true
+  }
+
+  metric_query {
+    id = "errors_1h"
+    metric {
+      metric_name = "HTTPCode_Target_5XX_Count"
+      namespace   = "AWS/ApplicationELB"
+      period      = 3600
+      stat        = "Sum"
+      dimensions  = {
+        LoadBalancer = var.alb_arn_suffix
+        TargetGroup  = var.tg_arn_suffix[each.key]
+      }
+    }
+  }
+  metric_query {
+    id = "total_1h"
+    metric {
+      metric_name = "RequestCount"
+      namespace   = "AWS/ApplicationELB"
+      period      = 3600
+      stat        = "Sum"
+      dimensions  = {
+        LoadBalancer = var.alb_arn_suffix
+        TargetGroup  = var.tg_arn_suffix[each.key]
+      }
+    }
+  }
+
+  alarm_actions = [var.sns_critical_arn]
+
+}
+
+### slow burn Alarm
+
+resource "aws_cloudwatch_metric_alarm" "slo_slow_burn" {
+  for_each = toset(var.ecs_clients)
+
+  alarm_name          = "HIGH-${each.key}-slo-slow-burn"
+  alarm_description   = "${each.key}: burning error budget 6x faster — will miss SLO in 5 days"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 3
+  threshold           = 3
+  treat_missing_data  = "notBreaching"
+
+  metric_query {
+    id          = "error_rate_6h"
+    expression  = "(errors_6h / total_6h) * 100"
+    label       = "Error rate % (6h window)"
+    return_data = true
+  }
+
+  metric_query {
+    id = "errors_6h"
+    metric {
+      metric_name = "HTTPCode_Target_5XX_Count"
+      namespace   = "AWS/ApplicationELB"
+      period      = 21600
+      stat        = "Sum"
+      dimensions  = {
+        LoadBalancer = var.alb_arn_suffix
+        TargetGroup  = var.tg_arn_suffix[each.key]
+      }
+    }
+  }
+
+  metric_query {
+    id = "total_6h"
+    metric {
+      metric_name = "RequestCount"
+      namespace   = "AWS/ApplicationELB"
+      period      = 21600
+      stat        = "Sum"
+      dimensions  = {
+        LoadBalancer = var.alb_arn_suffix
+        TargetGroup  = var.tg_arn_suffix[each.key]
+      }
+    }
+  }
+
+  alarm_actions = [var.sns_critical_arn]
+}
+
+
+
+
+
+
+#### Dashboard new 
+resource "aws_cloudwatch_dashboard" "sre_dashboard_1" {
+  dashboard_name = "${var.project_name}-sre-dashboard_1"
+
+  dashboard_body = jsonencode({
+    widgets = flatten([
+      # SRE FIX: Loop directly over the map!
+      for client, tg_suffix in var.tg_arn_suffix : {
+        type   = "metric"
+        # Because tg_arn_suffix IS a map, keys() works perfectly here to get the index:
+        x      = (index(keys(var.tg_arn_suffix), client) % 3) * 8 
+        y      = 0
+        width  = 8
+        height = 6
+
+        properties = {
+          title  = "${client} Error Rate (%)"
+          view   = "singleValue"
+          region = "eu-north-1"
+          period = 3600
+
+          metrics = [
+            [
+              {
+                expression = "(m1/m2)*100",
+                label      = "${client} error %",
+                id         = "e1",
+                stat       = "Sum"
+              }
+            ],
+            [
+              "AWS/ApplicationELB",
+              "HTTPCode_Target_5XX_Count",
+              "TargetGroup",
+              tg_suffix, # SRE FIX: Use the value directly from the map loop
+              { id = "m1", stat = "Sum", period = 3600, visible = false }
+            ],
+            [
+              ".",
+              "RequestCount",
+              ".",
+              ".",
+              { id = "m2", stat = "Sum", period = 3600, visible = false }
+            ]
+          ]
+        }
+      }
+    ])
+  })
+}
+
+# Budget warning alarm — fires when < 20% remaining
+resource "aws_cloudwatch_metric_alarm" "budget_low" {
+  # SRE FIX: Loop directly over the map!
+  for_each = var.tg_arn_suffix 
+
+  alarm_name          = "WARN-${each.key}-budget-80pct-consumed"
+  alarm_description   = "${each.key}: 80% of monthly error budget consumed"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ErrorBudgetRemainingPercent"
+  namespace           = "WordPress/SRE"
+  period              = 3600
+  statistic           = "Minimum"
+  threshold           = 20 
+
+  dimensions = { 
+    ClientId = each.key # each.key is "client3"
+  }
+
+  alarm_actions = [var.sns_high_arn] 
+}
+
+#### ERROR RATE % ALARM 
+resource "aws_cloudwatch_metric_alarm" "error_rate_1" {
+  # SRE FIX: Loop directly over the map!
+  for_each = var.tg_arn_suffix 
+
+  alarm_name          = "${var.project_name}-${each.key}-error_rate_1"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  threshold           = 0.5
+  alarm_description   = "Error rate > 0.5% for ${each.key}"
+
+  alarm_actions = [var.sns_critical_arn]
+
+  metric_query {
+    id = "errors"
+    metric {
+      namespace   = "AWS/ApplicationELB"
+      metric_name = "HTTPCode_Target_5XX_Count"
+      stat        = "Sum"
+      period      = 300
+
+      dimensions = {
+        TargetGroup = each.value # SRE FIX: each.value is "targetgroup/..."
+      }
+    }
+  }
+  # ... (Repeat the each.value logic for the requests metric query)
+}
+
+
+##### event bridge 
+# 6. Run every hour via EventBridge Schedule
+resource "aws_cloudwatch_event_rule" "hourly" {
+  name                = "${var.project_name}-error-budget-hourly"
+  schedule_expression = "rate(1 hour)"
+}
+
+resource "aws_cloudwatch_event_target" "error_budget_target" {
+  rule      = aws_cloudwatch_event_rule.hourly.name
+  target_id = "TriggerErrorBudgetLambda"
+  arn       = var.error_budget_arn
+}
+
+# # 7. SRE CRITICAL FIX: Allow EventBridge to actually invoke the Lambda!
+# resource "aws_lambda_permission" "allow_eventbridge" {
+#   statement_id  = "AllowExecutionFromCloudWatch"
+#   action        = "lambda:InvokeFunction"
+#   function_name = aws_lambda_function.error_budget.function_name
+#   principal     = "events.amazonaws.com"
+#   source_arn    = aws_cloudwatch_event_rule.hourly.arn
+# }
