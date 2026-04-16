@@ -263,4 +263,146 @@ Shared RDS, single-node Valkey, file-based sessions — these are all conscious 
 *Last updated: April 2026*
 
 
-in grfana all dropdown not working we try it but didnt worked we also tried regex not working single client works but wildcard entry is not worked 
+in grfana all dropdown not working we try it but didnt worked we also tried regex not working single client works but wildcard entry is not worked
+
+Incident: CloudWatch multi-tenant variable filtering failure
+Duration: 2 days of debugging
+Root cause: CloudWatch MetricStat does not support multi-value dimension filtering. Passing a Grafana variable containing multiple client names results in either empty data (curly-brace format rejected) or a single aggregated series (wildcard format merges all clients).
+What I tried: Custom all value = *, Metric Insights SQL IN clause, *wildcard* with Match Exact OFF, regex patterns.
+What worked: Grafana Panel Repeat feature — one panel template repeated per variable value, each panel using wordpress-hosting-${client_id}-service as an exact dimension match for its specific client.
+What I learned: CloudWatch is a dimension-exact metric system, not a label-based system like Prometheus. Prometheus lets you filter and group by labels flexibly. CloudWatch requires you to know exactly which dimension values you want at query time. Design your observability architecture around this constraint — per-metric queries per tenant, not variable filtering across tenants.
+
+
+###### Grafana ai used for solve above 
+✅ **All 6 panels are running.** Here's the status:  
+
+| Panel | Status | Notes |  
+|-------|--------|-------|  
+| ECS CPU Utilization | ✅ Data | client3: 56.3% max, client4: 55.7%, client5: 63.2% |  
+| ECS Memory Utilization | ✅ Data | client3: 14.9%, client4: 17.9%, client5: 18.6% |  
+| ECS Running Task Count | ✅ Data | Historical spikes visible, currently 0 tasks |  
+| ALB Response Time | ⚪ No data | No ALB traffic in last 2 days — not a bug |  
+| ALB Error Count | ⚪ No data | Same reason — no traffic |  
+| ALB Healthy/Unhealthy Hosts | ⚪ No data | Same reason — no traffic |  
+
+**Why ALB shows "No data":** Your ALB target groups exist, but there's been no incoming HTTP traffic to generate CloudWatch metrics in the last 2 days. The moment traffic flows through the ALB, these panels will show data automatically.  
+
+---  
+
+## 📖 Self-Help Guide — Adding CloudWatch Panels to This Dashboard  
+
+### 1. How the Variable Cascade Works  
+
+```  
+client_id (you pick: client3 / client4 / client5 / All)  
+    │  
+    ├─► ecs_service  (HIDDEN — auto-filters ECS service names)  
+    │   regex: (wordpress-hosting-(?:${client_id:regex})-service)  
+    │  
+    └─► alb_tg       (HIDDEN — auto-filters ALB target groups)  
+        regex: (targetgroup/(?:${client_id:regex})[^/]*/[a-f0-9]+)  
+```  
+
+**Rule:** Never expose `ecs_service` or `alb_tg` in the UI dropdown. They are hidden cascade variables — changing `client_id` automatically updates them.  
+
+---  
+
+### 2. Two Query Types in CloudWatch  
+
+#### Type A — MetricStat (use for ECS)  
+Works when you have **1 specific dimension value** or when the variable expands to `{val1,val2,val3}`:  
+
+```  
+Namespace:  AWS/ECS  
+Metric:     CPUUtilization  
+Dimensions: ClusterName = wordpress-hosting-cluster  
+            ServiceName = ${ecs_service}  
+matchExact: false   ← important! allows multi-value expansion  
+```  
+
+✅ Use MetricStat for: `CPUUtilization`, `MemoryUtilization`, `RunningTaskCount`  
+
+#### Type B — Metric Insights SQL (use for ALB)  
+Required when MetricStat can't handle `$__all` expansion. Uses SQL syntax:  
+
+```sql  
+SELECT AVG(TargetResponseTime)  
+FROM SCHEMA("AWS/ApplicationELB", TargetGroup, LoadBalancer)  
+WHERE TargetGroup LIKE 'targetgroup/client_-tg-%'  
+GROUP BY TargetGroup  
+LIMIT 10  
+```  
+
+The `_` in `client_` is a SQL wildcard = any single character → matches client**3**, client**4**, client**5**.  
+
+✅ Use SQL for: all `AWS/ApplicationELB` metrics — `TargetResponseTime`, `HTTPCode_Target_5XX_Count`, `RequestCount`, `HealthyHostCount`  
+
+---  
+
+### 3. Adding a New ECS Panel (Step-by-Step)  
+
+1. Click **Add panel** → **Add visualization**  
+2. Select datasource: **CloudWatch (efj11a9nphcsga)**  
+3. Switch to **Code editor** mode  
+4. Set:  
+   - Query type: `CloudWatch Metrics`  
+   - Namespace: `AWS/ECS`  
+   - Metric name: *(e.g. CPUReservation)*  
+   - Dimensions: `ClusterName = wordpress-hosting-cluster`, `ServiceName = ${ecs_service}`  
+   - Statistic: `Average`  
+   - Region: `eu-north-1`  
+   - Label: `${PROP('Dim.ServiceName')}`  
+   - **matchExact = false**  
+
+---  
+
+### 4. Adding a New ALB Panel (Step-by-Step)  
+
+1. Click **Add panel** → **Add visualization**  
+2. Select datasource: **CloudWatch**  
+3. In the query builder, switch to **Code / SQL** mode  
+4. Set `metricQueryType = 1` (Metric Insights)  
+5. Write your SQL:  
+
+```sql  
+SELECT SUM(RequestCount)  
+FROM SCHEMA("AWS/ApplicationELB", TargetGroup, LoadBalancer)  
+WHERE TargetGroup LIKE 'targetgroup/client_-tg-%'  
+GROUP BY TargetGroup  
+ORDER BY SUM(RequestCount) DESC  
+LIMIT 10  
+```  
+
+6. Region: `eu-north-1`  
+7. Panel type: **Time series**  
+
+---  
+
+### 5. Common Mistakes to Avoid  
+
+| Mistake | Fix |  
+|---------|-----|  
+| ALB panel shows "No data" with MetricStat | Switch to Metric Insights SQL |  
+| Variable shows only client3 | Check for stale `current` state — use `set` operation to redefine the variable |  
+| ECS multi-service not showing | Add `matchExact: false` to the query |  
+| Wrong region | Always set `eu-north-1` explicitly (don't use "default") |  
+| `$ecs_service` not expanding | Make sure `var-ecs_service=$__all` is in the URL |  
+
+---  
+
+### 6. Available Metrics Reference  
+
+**ECS (`AWS/ECS`)**  
+- `CPUUtilization` — % CPU used per service  
+- `MemoryUtilization` — % memory used per service  
+
+**ECS Container Insights (`ECS/ContainerInsights`)**  
+- `RunningTaskCount` — number of running tasks  
+- `DesiredTaskCount`, `PendingTaskCount`  
+
+**ALB (`AWS/ApplicationELB`)**  
+- `TargetResponseTime` — latency in seconds (use p99/p95/p50)  
+- `RequestCount` — total requests  
+- `HTTPCode_Target_5XX_Count` — server errors  
+- `HTTPCode_Target_4XX_Count` — client errors  
+- `HealthyHostCount` / `UnHealthyHostCount`
