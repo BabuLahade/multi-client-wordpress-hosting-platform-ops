@@ -417,7 +417,7 @@ resource "aws_cloudwatch_metric_alarm" "error_rate" {
   alarm_description   = "Error rate > 0.5% for ${each.key}"
 
   alarm_actions = [var.sns_critical_arn]
-
+  treat_missing_data  = "notBreaching"
   metric_query {
     id          = "errors"
     return_data = false # FIX 1: Hides this raw data from the alarm trigger
