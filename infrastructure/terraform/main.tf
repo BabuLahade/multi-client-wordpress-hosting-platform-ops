@@ -258,6 +258,8 @@ module "cloudwatch" {
   alb_arn_suffix = module.alb.alb_arn_suffix
   # service_name = module.ECS.service_name
   error_budget_arn = module.lambda.error_budget_arn
+  certificate_arn = module.edge.certificate_arn
+  efs_file_system_id = module.efs.efs_file_system_id
 
 }
 

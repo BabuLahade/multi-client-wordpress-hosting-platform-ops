@@ -127,7 +127,7 @@ resource "aws_cloudwatch_metric_alarm" "no_healthy_tasks" {
 ### RDS connection Exhaust
 resource "aws_cloudwatch_metric_alarm" "rds_connections" {
   alarm_name = "${var.project_name}-RDS-High-Connections"
-  comparison_operator = "LessThanThreshold"
+  comparison_operator = "GreaterThanThreshold"
   metric_name = "DatabaseConnections"
   namespace = "AWS/RDS"
   statistic = "Average"
@@ -883,10 +883,10 @@ resource "aws_cloudwatch_metric_alarm" "high_cpu" {
   statistic           = "Average"
   threshold           = 85
   dimensions = {
-    ClusterName = aws_ecs_cluster.wordpress.name
-    ServiceName = "wordpress-${each.key}"
+    ClusterName = var.cluster_name
+    ServiceName = "wordpress-hosting-${each.key}-service"
   }
-  alarm_actions = [aws_sns_topic.high.arn]
+  alarm_actions = [var.sns_high_arn]
 }
 
 # ── RDS connections approaching limit ────────────────────────────────
@@ -1003,4 +1003,104 @@ resource "aws_cloudwatch_metric_alarm" "ecs_max_capacity" {
     ServiceName = "wordpress-hosting-${each.key}-service"
   }
   alarm_actions = [var.sns_high_arn]
+}
+         # ==========================================
+         # FINOPS Dashboard and SLO Dashboard
+         # ==========================================
+
+resource "aws_cloudwatch_dashboard" "slo_finops_dashboard" {
+  dashboard_name = "${var.project_name}-SLO-FinOps"
+
+  dashboard_body = jsonencode({
+    widgets = flatten([
+      
+   
+      [for client, tg_suffix in var.tg_arn_suffix : {
+        type   = "metric"
+        x      = (index(keys(var.tg_arn_suffix), client) % 3) * 8 
+        y      = 0
+        width  = 8
+        height = 6
+        properties = {
+          title   = "${client} - Error Budget Remaining (%)"
+          view    = "gauge" 
+          region  = "eu-north-1"
+          period  = 86400
+          stat    = "Average"
+          yAxis   = { left = { min = 0, max = 100 } }
+          metrics = [
+            ["WordPress/SRE", "ErrorBudgetRemainingPercent", "ClientId", client]
+          ]
+          annotations = {
+            horizontal = [
+              { color = "#d62728", value = 20, label = "CRITICAL (Investigate)" },
+              { color = "#ff7f0e", value = 50, label = "WARNING" }
+            ]
+          }
+        }
+      }],
+
+      
+      [{
+        type   = "metric"
+        x      = 0
+        y      = 6
+        width  = 24
+        height = 8
+        properties = {
+          title   = "Platform Error Budget Burn-down (30 Days)"
+          view    = "timeSeries"
+          region  = "eu-north-1"
+          period  = 3600
+          stacked = false
+          # We dynamically inject all clients onto a single line graph
+          metrics = [for c in keys(var.tg_arn_suffix) : 
+            ["WordPress/SRE", "ErrorBudgetRemainingPercent", "ClientId", c]
+          ]
+        }
+      }],
+
+      
+      [
+        # Daily Spend 
+        {
+          type   = "metric"
+          x      = 0
+          y      = 14
+          width  = 16
+          height = 8
+          properties = {
+            title   = "Daily AWS Spend per Service ($)"
+            view    = "bar"
+            stacked = true
+            region  = "eu-north-1"
+            period  = 86400
+            metrics = [
+              ["WordPress/FinOps", "DailyCost", "Service", "AmazonECS"],
+              [".", ".", ".", "AmazonRDS"],
+              [".", ".", ".", "AmazonEC2"], 
+              [".", ".", ".", "AmazonEFS"]
+            ]
+          }
+        },
+        # Cost per Client (Pie Chart)
+        {
+          type   = "metric"
+          x      = 16
+          y      = 14
+          width  = 8
+          height = 8
+          properties = {
+            title   = "Monthly Cost Distribution by Client"
+            view    = "pie"
+            region  = "eu-north-1"
+            period  = 2592000 
+            metrics = [for c in keys(var.tg_arn_suffix) : 
+              ["WordPress/FinOps", "CostPerClient", "ClientId", c]
+            ]
+          }
+        }
+      ]
+    ])
+  })
 }

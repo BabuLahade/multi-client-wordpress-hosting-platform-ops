@@ -406,3 +406,24 @@ LIMIT 10
 - `HTTPCode_Target_5XX_Count` — server errors  
 - `HTTPCode_Target_4XX_Count` — client errors  
 - `HealthyHostCount` / `UnHealthyHostCount`
+
+## Incident: ALB 5XX vs Target 5XX Misleading Metrics
+
+### What happened
+Set ECS desired count = 0 → all targets deregistered
+
+### Observation
+- TargetGroup metrics showed 0 errors ❌ (misleading)
+- ALB metrics showed 5XX errors ✔ (real issue)
+
+### Root Cause
+No registered targets → ALB itself returned 5XX
+
+### Learning
+Target-level metrics only work when targets exist.
+
+### Fix
+Added:
+- ELB error rate monitoring
+- HealthyHostCount alarm
+- Dual-layer monitoring (ELB + Target)
