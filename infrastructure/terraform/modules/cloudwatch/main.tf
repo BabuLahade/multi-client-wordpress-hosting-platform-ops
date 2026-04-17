@@ -846,3 +846,161 @@ resource "aws_cloudwatch_event_target" "error_budget_target" {
 #   principal     = "events.amazonaws.com"
 #   source_arn    = aws_cloudwatch_event_rule.hourly.arn
 # }
+
+###### HIGH ALARMS 
+# ── p99 response time slow (per client) ──────────────────────────────
+# Fires when: p99 > 2 seconds for 10 minutes
+# First check: RDS CPU. Second check: EFS BurstCreditBalance.
+resource "aws_cloudwatch_metric_alarm" "high_latency" {
+  for_each            = toset(var.ecs_clients)
+  alarm_name          = "HIGH-${each.key}-p99-latency"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2        # 2 × 5min = 10 minutes sustained
+  metric_name         = "TargetResponseTime"
+  namespace           = "AWS/ApplicationELB"
+  period              = 300
+  extended_statistic  = "p99"    # not Average — p99 latency
+  threshold           = 2        # seconds
+  dimensions = {
+    LoadBalancer = var.alb_arn_suffix
+    TargetGroup  = var.tg_arn_suffix[each.key]
+  }
+  alarm_actions = [var.sns_high_arn]
+}
+
+# ── ECS CPU sustained high (per client) ───────────────────────────────
+# Fires when: average CPU > 85% for 10 minutes
+# First check: auto-scaling — did it trigger? If yes: real traffic spike.
+# If no: likely a PHP process in an infinite loop.
+resource "aws_cloudwatch_metric_alarm" "high_cpu" {
+  for_each            = toset(var.ecs_clients)
+  alarm_name          = "HIGH-${each.key}-ecs-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "CpuUtilized"
+  namespace           = "ECS/ContainerInsights"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 85
+  dimensions = {
+    ClusterName = aws_ecs_cluster.wordpress.name
+    ServiceName = "wordpress-${each.key}"
+  }
+  alarm_actions = [aws_sns_topic.high.arn]
+}
+
+# ── RDS connections approaching limit ────────────────────────────────
+# Fires when: connections > 85 (db.t3.micro limit = 100)
+# At 85, next traffic burst could hit 100 causing "Too many connections"
+# for all three clients simultaneously — your most shared failure mode
+resource "aws_cloudwatch_metric_alarm" "rds_connections_high" {
+  alarm_name          = "HIGH-rds-connections"
+  alarm_description   = "RDS approaching 100 connection limit"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "DatabaseConnections"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Maximum"
+  threshold           = 85
+  dimensions = { DBInstanceIdentifier = "wordpress-hosting-db-instance" }
+  alarm_actions = [var.sns_high_arn]
+}
+
+# ── RDS CPU high ───────────────────────────────────────────────────────
+# Fires when: RDS CPU > 80% for 5 minutes
+# Usually caused by slow queries — run SHOW PROCESSLIST to find culprit
+resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
+  alarm_name          = "HIGH-rds-cpu"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/RDS"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 80
+  dimensions = { 
+    DBInstanceIdentifier = "wordpress-hosting-db-instance"  }
+  alarm_actions = [var.sns_high_arn]
+}
+
+# ── EFS burst credits low ─────────────────────────────────────────────
+# Fires when: burst credits < 1 million
+# WHY THIS MATTERS: when credits hit zero, EFS I/O drops from burst
+# speed to 50KB/s baseline. WordPress becomes 8-10 seconds per page.
+# This is a slow-moving crisis you can see coming hours in advance.
+resource "aws_cloudwatch_metric_alarm" "efs_credits_low" {
+  alarm_name          = "WARN-efs-burst-credits-low"
+  alarm_description   = "EFS burst credits running low — I/O degradation risk"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "BurstCreditBalance"
+  namespace           = "AWS/EFS"
+  period              = 3600   # check hourly
+  statistic           = "Minimum"
+  threshold           = 1000000
+  dimensions = { 
+    FileSystemId =   var.efs_file_system_id
+    }
+  alarm_actions = [var.sns_high_arn]
+}
+
+# ── Valkey memory high ────────────────────────────────────────────────
+# Fires when: memory > 80%
+# Above 80%, Valkey evicts cache keys. Cache miss rate increases.
+# DB load increases. Response times increase.
+resource "aws_cloudwatch_metric_alarm" "valkey_memory" {
+  alarm_name          = "WARN-valkey-memory-high"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "DatabaseMemoryUsagePercentage"
+  namespace           = "AWS/ElastiCache"
+  period              = 300
+  statistic           = "Average"
+  threshold           = 80
+  dimensions = { 
+    CacheClusterId =  "wordpress-hosting-valkey-cluster-001"
+    }
+  alarm_actions = [var.sns_high_arn]
+}
+
+# ── SSL certificate expiry ────────────────────────────────────────────
+# Fires when: certificate expires in < 30 days
+# ACM auto-renews but only if DNS validation records are correct.
+# If someone deleted the CNAME validation record, auto-renewal fails.
+resource "aws_cloudwatch_metric_alarm" "ssl_expiry" {
+  for_each            = toset(var.ecs_clients)
+  alarm_name          = "WARN-${each.key}-ssl-expiry-30d"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "DaysToExpiry"
+  namespace           = "AWS/CertificateManager"
+  period              = 86400   # check daily
+  statistic           = "Minimum"
+  threshold           = 30
+  dimensions = { 
+    CertificateArn = var.certificate_arn
+   }
+  alarm_actions = [var.sns_high_arn]
+}
+
+# ── ECS at maximum capacity ───────────────────────────────────────────
+# Fires when: RunningTaskCount == MaximumCapacity (cannot scale further)
+# Auto-scaling cannot add more tasks. If traffic continues growing,
+# response times will degrade. Check if traffic source is legitimate.
+resource "aws_cloudwatch_metric_alarm" "ecs_max_capacity" {
+  for_each            = toset(var.ecs_clients)
+  alarm_name          = "WARN-${each.key}-ecs-max-capacity"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "RunningTaskCount"
+  namespace           = "ECS/ContainerInsights"
+  period              = 300
+  statistic           = "Maximum"
+  threshold           = 5   # your maximum task count — adjust to match your config
+  dimensions = {
+    ClusterName = var.cluster_name
+    ServiceName = "wordpress-hosting-${each.key}-service"
+  }
+  alarm_actions = [var.sns_high_arn]
+}

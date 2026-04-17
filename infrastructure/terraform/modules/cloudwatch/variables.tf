@@ -38,3 +38,9 @@ variable "tg_arn_suffix" {
 variable "error_budget_arn" {
   type = string
 }
+variable "efs_file_system_id" {
+  type = string
+}
+variable "certificate_arn" {
+  type = string
+}
