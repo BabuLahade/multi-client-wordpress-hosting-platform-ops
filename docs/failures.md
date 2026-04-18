@@ -427,3 +427,5 @@ Added:
 - ELB error rate monitoring
 - HealthyHostCount alarm
 - Dual-layer monitoring (ELB + Target)
+
+### client level slo will not affect but its actullyaffecting by downtime its like blind spot or hole in or slo and error rate  
