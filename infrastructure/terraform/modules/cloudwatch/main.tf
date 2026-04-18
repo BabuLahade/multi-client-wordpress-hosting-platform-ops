@@ -1104,3 +1104,47 @@ resource "aws_cloudwatch_dashboard" "slo_finops_dashboard" {
     ])
   })
 }
+
+resource "aws_cloudwatch_metric_alarm" "no_healthy_hosts" {
+  for_each = toset(var.ecs_clients)
+
+  alarm_name          = "CRITICAL-${each.key}-zero-healthy-targets"
+  alarm_description   = "ALL targets deregistered for ${each.key} — site completely down"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "HealthyHostCount"
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Minimum"
+  threshold           = 1
+  treat_missing_data  = "breaching"  # ← CRITICAL: no data = alarm, not OK
+
+  dimensions = {
+    LoadBalancer = var.alb_arn_suffix
+    TargetGroup  = var.tg_arn_suffix[each.key]
+  }
+
+  alarm_actions = [var.sns_critical_arn]
+  ok_actions    = [var.sns_critical_arn]
+}
+resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
+  for_each = toset(var.ecs_clients)
+
+  alarm_name          = "CRITICAL-${each.key}-alb-5xx"
+  alarm_description   = "ALB returning 5xx for ${each.key} — no healthy targets"
+  comparison_operator = "GreaterThanThreshold"
+  evaluation_periods  = 1
+  metric_name         = "HTTPCode_ELB_5XX_Count"  # ← ALB-generated errors, not target errors
+  namespace           = "AWS/ApplicationELB"
+  period              = 60
+  statistic           = "Sum"
+  threshold           = 3
+  treat_missing_data  = "notBreaching"
+
+  dimensions = {
+    LoadBalancer = var.alb_arn_suffix
+    TargetGroup  = var.tg_arn_suffix[each.key]
+  }
+
+  alarm_actions = [var.sns_critical_arn]
+}
