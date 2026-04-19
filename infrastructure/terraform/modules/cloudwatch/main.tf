@@ -932,13 +932,13 @@ resource "aws_cloudwatch_metric_alarm" "rds_cpu_high" {
 resource "aws_cloudwatch_metric_alarm" "efs_credits_low" {
   alarm_name          = "WARN-efs-burst-credits-low"
   alarm_description   = "EFS burst credits running low — I/O degradation risk"
-  comparison_operator = "LessThanThreshold"
+  comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "BurstCreditBalance"
   namespace           = "AWS/EFS"
   period              = 3600   # check hourly
   statistic           = "Minimum"
-  threshold           = 1000000
+  threshold           = 85
   dimensions = { 
     FileSystemId =   var.efs_file_system_id
     }
