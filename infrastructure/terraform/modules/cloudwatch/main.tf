@@ -1148,3 +1148,129 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
 
   alarm_actions = [var.sns_critical_arn]
 }
+
+
+
+############3 Logging Querry ##########
+
+
+resource "aws_cloudwatch_query_definition" "sre_wp_crashes" {
+  name = "WordPress-SRE/02 - PHP & Database Errors"
+  log_group_names = [
+    "/ecs/${var.project_name}-client3",
+    "/ecs/${var.project_name}-client4",
+    "/ecs/${var.project_name}-client5"
+  ]
+
+  query_string = <<EOF
+fields @timestamp, @logStream, @message
+| filter @message like /Fatal error/ or @message like /database connection/
+| sort @timestamp desc
+| limit 20
+EOF
+}
+resource "aws_cloudwatch_query_definition" "sre_nginx_5xx" {
+  name = "WordPress-SRE/01 - NGINX 5xx Errors"
+
+  log_group_names = [
+    # "/ecs/${var.project_name}-client3",
+    # "/ecs/${var.project_name}-client4",
+    # "/ecs/${var.project_name}-client5"
+    for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}"
+  ]
+
+  query_string = <<EOF
+parse @message '* - - [*] "* * *" * *' as clientIP, timestamp, method, uri, protocol, statusCode, bytes
+| filter statusCode >= 500
+| fields @timestamp, statusCode, uri, clientIP
+| sort @timestamp desc
+| limit 20
+EOF
+}
+resource "aws_cloudwatch_query_definition" "sre_top_urls" {
+  name = "WordPress-SRE/03 - Top Requested URLs"
+  log_group_names = [
+    # "/ecs/${var.project_name}-client3",
+    # "/ecs/${var.project_name}-client4",
+    # "/ecs/${var.project_name}-client5"
+    for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}"
+  ]
+
+  query_string = <<EOF
+parse @message '* - - [*] "* * *" * *' as clientIP, timestamp, method, uri, protocol, statusCode, bytes
+| stats count() as requestCount by uri
+| sort requestCount desc
+| limit 10
+EOF
+}
+resource "aws_cloudwatch_query_definition" "sre_error_trend" {
+  name = "WordPress-SRE/04 - Hourly Error Trend"
+  log_group_names = [
+    # "/ecs/${var.project_name}-client3",
+    # "/ecs/${var.project_name}-client4",
+    # "/ecs/${var.project_name}-client5"
+    for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}"
+  ]
+
+  query_string = <<EOF
+parse @message '* - - [*] "* * *" * *' as clientIP, timestamp, method, uri, protocol, statusCode, bytes
+| filter statusCode >= 400
+| stats count() as ErrorCount by bin(1h)
+| sort @timestamp desc
+EOF
+}
+
+
+resource "aws_cloudwatch_query_definition" "sre_security_brute_force" {
+  name = "WordPress-SRE-01-SecurityBruteForce&BotAttacks"
+  log_group_names = [for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}"]
+
+  query_string = <<EOF
+parse @message '* - - [*] "* * *" * *' as ip, time, method, uri, protocol, status, bytes
+| filter uri like "/wp-login.php" or uri like "/xmlrpc.php"
+| stats count() as AttackAttempts by ip
+| sort AttackAttempts desc
+| limit 10
+EOF
+}
+
+
+resource "aws_cloudwatch_query_definition" "sre_finops_bandwidth" {
+  name = "WordPress-SRE-2FinOpsHighestBandwidthConsumers(IPs)"
+  log_group_names = [for c in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${c}"]
+
+  query_string = <<EOF
+parse @message '* - - [*] "* * *" * *' as ip, time, method, uri, protocol, status, bytes
+| filter status == 200
+| stats sum(bytes)/1024/1024 as MegabytesDownloaded by ip
+| sort MegabytesDownloaded desc
+| limit 10
+EOF
+}
+
+
+resource "aws_cloudwatch_query_definition" "sre_platform_crashes" {
+  name = "WordPress-SRE-03AppGlobalPHPFatals&DBDrops"
+  log_group_names = [for c in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${c}"]
+
+  query_string = <<EOF
+fields @timestamp, @logStream, @message
+| filter @message like /Fatal error/ or @message like /database connection/ or @message like /Allowed memory size/
+| sort @timestamp desc
+| limit 50
+EOF
+}
+
+
+resource "aws_cloudwatch_query_definition" "sre_incident_timeline" {
+  name = "WordPress-SRE-04-Incident5xxErrorTimeline(5-MinBins)"
+  log_group_names = [for c in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${c}"]
+
+  query_string = <<EOF
+parse @message '* - - [*] "* * *" * *' as ip, time, method, uri, protocol, status, bytes
+| filter status >= 500
+| stats count() as CriticalErrors by bin(5m)
+| sort @timestamp desc
+EOF
+}
+   
