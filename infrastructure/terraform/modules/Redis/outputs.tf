@@ -9,3 +9,6 @@ output "valkey_endpoint" {
 output "cache_id" {
     value = aws_elasticache_replication_group.valkey_cluster.id
 }
+output "primary_endpoint_address" {
+    value = aws_elasticache_replication_group.valkey_cluster.primary_endpoint_address
+}

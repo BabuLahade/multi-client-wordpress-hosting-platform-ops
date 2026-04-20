@@ -1274,3 +1274,17 @@ parse @message '* - - [*] "* * *" * *' as ip, time, method, uri, protocol, statu
 EOF
 }
    
+### lambda-aut-heal-eventbridge
+resource "aws_cloudwatch_event_rule" "auto_heal_trigger" {
+  name        = "${var.project_name}-auto-heal-trigger"
+  event_pattern = jsonencode({
+    source      = ["aws.cloudwatch"]
+    detail-type = ["CloudWatch Alarm State Change"]
+    detail      = { alarmName = [{ prefix = "HIGH-" }], state = { value = ["ALARM"] } }
+  })
+}
+resource "aws_cloudwatch_event_target" "auto_heal_target" {
+  rule      = aws_cloudwatch_event_rule.auto_heal_trigger.name
+  target_id = "TriggerAutoHealLambda"
+  arn       = var.lambda_auto_heal_arn
+}

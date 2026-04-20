@@ -22,3 +22,6 @@ output "ecs_task_role_arn" {
 output "lambda_role_arn" {
   value = aws_iam_role.lambda_error_budget.arn
 }
+output "lambda_iam_auto_heal_arn" {
+  value = aws_iam_role.auto_heal_role.arn
+}

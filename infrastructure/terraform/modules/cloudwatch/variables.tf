@@ -44,3 +44,6 @@ variable "efs_file_system_id" {
 variable "certificate_arn" {
   type = string
 }
+variable "lambda_auto_heal_arn" {
+  type =string
+}

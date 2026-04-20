@@ -10,3 +10,30 @@ variable "lambda_role_arn" {
 variable "cloudwatch_event_arn" {
     type = string
 }
+variable "lambda_iam_auto_heal_arn"{
+  type = string
+}
+variable "db_user" {
+  type = string
+}
+variable "private_app_subnet_ids" {
+  type = map(string)
+}
+variable "app_security_group_id" {
+  type = string
+}
+variable "db_instance_address" {
+  type = string
+}
+variable "slack_webhook_url" {
+  type = string 
+}
+variable "primary_endpoint_address" {
+  type = string
+}
+variable "cloudwatch_auto_heal_arn" {
+  type = string
+}
+variable "db_secret_arn" {
+  type = string
+}

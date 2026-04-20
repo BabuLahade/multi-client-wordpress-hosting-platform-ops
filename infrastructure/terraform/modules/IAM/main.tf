@@ -217,3 +217,29 @@ resource "aws_iam_role_policy" "lambda_metrics_access" {
     }]
   })
 }
+resource "aws_iam_role" "auto_heal_role" {
+  name = "${var.project_name}-auto-heal-role"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{ Action = "sts:AssumeRole", Effect = "Allow", Principal = { Service = "lambda.amazonaws.com" } }]
+  })
+}
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.auto_heal_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+resource "aws_iam_role_policy" "lambda_secrets_access" {
+  name = "${var.project_name}-lambda-secrets-policy"
+  role = aws_iam_role.auto_heal_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "secretsmanager:GetSecretValue"
+        Resource = var.db_secret_arn # Replace with your actual Secret resource name
+      }
+    ]
+  })
+}

@@ -18,3 +18,6 @@ output "ecs_memory_high" {
 output "cloudwatch_event_arn" {
     value = aws_cloudwatch_event_rule.hourly.arn
 }
+output "cloudwatch_auto_heal_arn" {
+    value = aws_cloudwatch_event_rule.auto_heal_trigger.arn
+}

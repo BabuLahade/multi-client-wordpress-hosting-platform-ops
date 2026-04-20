@@ -144,6 +144,7 @@ module "IAM" {
   source = "./modules/IAM"
   project_name = var.project_name
   media_bucket_arn = module.s3.media_bucket_arn
+  db_secret_arn = module.secretsmanager.db_secret_arn
 }
 # module "launch_template" {
 #   source = "./modules/ec2_launch_template"
@@ -260,7 +261,7 @@ module "cloudwatch" {
   error_budget_arn = module.lambda.error_budget_arn
   certificate_arn = module.edge.certificate_arn
   efs_file_system_id = module.efs.efs_file_system_id
-
+  lambda_auto_heal_arn = module.lambda.lambda_auto_heal_arn
 }
 
 module "budget" {
@@ -285,5 +286,14 @@ module "lambda" {
   tg_arn_suffix = module.alb.tg_arn_suffix
   lambda_role_arn = module.IAM.lambda_role_arn
   cloudwatch_event_arn = module.cloudwatch.cloudwatch_event_arn
+  db_user = var.db_username
+  cloudwatch_auto_heal_arn = module.cloudwatch.cloudwatch_auto_heal_arn
+  app_security_group_id = module.security_group.app_security_group_id
+  private_app_subnet_ids = module.subnet.private_app_subnet_ids
+  lambda_iam_auto_heal_arn = module.IAM.lambda_iam_auto_heal_arn
+  db_instance_address = module.rds.db_instance_address
+  slack_webhook_url = var.slack_webhook_url
+  primary_endpoint_address = module.redis.primary_endpoint_address
+  db_secret_arn = module.secretsmanager.db_secret_arn
 
 }
