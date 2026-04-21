@@ -19,3 +19,10 @@ resource "aws_sns_topic_subscription" "email_high" {
   protocol = "email"
   endpoint = "babulahade@gmail.com"
 }
+
+
+resource "aws_sns_topic_subscription" "slack_critical_sub" {
+  topic_arn = aws_sns_topic.critical.arn
+  protocol  = "lambda"
+  endpoint  = aws_lambda_function.slack_notify_lambda.arn
+}

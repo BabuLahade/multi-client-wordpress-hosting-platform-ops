@@ -25,3 +25,6 @@ output "lambda_role_arn" {
 output "lambda_iam_auto_heal_arn" {
   value = aws_iam_role.auto_heal_role.arn
 }
+output "slack_lambda_role_arn"{
+  value = aws_iam_role.slack_lambda_role.arn
+}

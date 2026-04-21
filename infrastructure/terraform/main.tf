@@ -278,6 +278,7 @@ module "WAF" {
 module "SNS" {
   source = "./modules/SNS"
   project_name = var.project_name
+  slack_lambda_arn = module.lambda.slack_lambda_arn
 }
 
 module "lambda" {
@@ -295,5 +296,7 @@ module "lambda" {
   slack_webhook_url = var.slack_webhook_url
   primary_endpoint_address = module.redis.primary_endpoint_address
   db_secret_arn = module.secretsmanager.db_secret_arn
+  slack_lambda_role_arn = module.IAM.slack_lambda_role_arn
+  grafana_url = var.grafana_url
 
 }

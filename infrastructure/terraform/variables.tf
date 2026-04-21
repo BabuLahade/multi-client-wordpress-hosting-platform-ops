@@ -134,3 +134,6 @@ variable "domain_name" {
 variable "slack_webhook_url" {
   type = string
 }
+variable "grafana_url" {
+  type =string
+}

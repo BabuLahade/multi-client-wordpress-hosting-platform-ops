@@ -112,3 +112,46 @@ resource "aws_lambda_permission" "allow_eventbridge_lamda" {
   principal     = "events.amazonaws.com"
   source_arn    = var.cloudwatch_auto_heal_arn
 }
+
+
+#########################
+
+resource "null_resource" "install_slack_dependencies" {
+  triggers = { 
+    requirements_hash = filemd5("${path.module}/slack_notify/requirements.txt") 
+  }
+  provisioner "local-exec" {
+    command = "pip install -r ${path.module}/slack_notify/requirements.txt -t ${path.module}/src_slack_notify/"
+  }
+}
+
+data "archive_file" "slack_notify_zip" {
+  depends_on  = [null_resource.install_slack_dependencies]
+  type        = "zip"
+  source_dir  = "${path.module}/slack_notify"
+  output_path = "${path.module}/slack_notify.zip" # Drops the zip next to main.tf
+}
+
+resource "aws_lambda_function" "slack_notify_lambda" {
+  filename         = data.archive_file.slack_notify_zip.output_path
+  function_name    = "wordpress-slack-notify"
+  role             = var.slack_lambda_role_arn
+  handler          = "slack_notify.handler"
+  source_code_hash = data.archive_file.slack_notify_zip.output_base64sha256
+  runtime          = "python3.11"
+  timeout          = 10
+
+  environment {
+    variables = {
+      SLACK_WEBHOOK = var.slack_webhook_url
+      GRAFANA_URL   = var.grafana_url
+    }
+  }
+}
+
+resource "aws_lambda_permission" "allow_sns" {
+  statement_id  = "AllowExecutionFromSNS"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.slack_notify_lambda.function_name
+  principal     = "sns.amazonaws.com"
+}
