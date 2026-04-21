@@ -300,3 +300,9 @@ module "lambda" {
   grafana_url = var.grafana_url
 
 }
+
+module "backup" {
+  source = "./modules/backup"
+  project_name = var.project_name
+  efs_arn = module.efs.efs_arn
+}

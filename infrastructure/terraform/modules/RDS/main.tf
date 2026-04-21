@@ -18,6 +18,9 @@ resource "aws_db_instance" "wordpress_db"{
     db_name = var.db_name
     vpc_security_group_ids = [var.db_security_group_id]
     db_subnet_group_name = aws_db_subnet_group.db_subnet_group.name
+    backup_retention_period = 7
+    backup_window           = "03:00-04:00"
+    copy_tags_to_snapshot   = true
     skip_final_snapshot = true  
     multi_az = true 
     publicly_accessible = false
