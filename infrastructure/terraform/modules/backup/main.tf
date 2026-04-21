@@ -23,13 +23,7 @@ resource "aws_backup_selection" "efs_backup_selection" {
 
   resources = [var.efs_arn]
 }
-resource "aws_backup_selection" "efs_backup_selection" {
-  iam_role_arn = aws_iam_role.aws_backup_role.arn
-  name         = "${var.project_name}-efs-selection"
-  plan_id      = aws_backup_plan.daily_plan.id
 
-  resources = [var.efs_arn]
-}
 resource "aws_iam_role" "aws_backup_role" {
   name = "${var.project_name}-aws-backup-role"
   assume_role_policy = jsonencode({
