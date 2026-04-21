@@ -82,7 +82,7 @@ resource "aws_iam_role" "ecs_task_role" {
     })
 }
 resource "aws_iam_policy" "ecs_exec_policy" {
-    name = "${var.project_name}-ecs-exec-policy"
+    name = "${var.project_name}-ecs-exec-policy-v2"
     description = "Policy to allow ECS Exec access"
     policy = jsonencode ({
         Version = "2012-10-17"

@@ -1157,9 +1157,9 @@ resource "aws_cloudwatch_metric_alarm" "alb_5xx" {
 resource "aws_cloudwatch_query_definition" "sre_wp_crashes" {
   name = "WordPress-SRE/02 - PHP & Database Errors"
   log_group_names = [
-    "/ecs/${var.project_name}-client3",
-    "/ecs/${var.project_name}-client4",
-    "/ecs/${var.project_name}-client5"
+    "/ecs/${var.project_name}-client3-wordpress",
+    "/ecs/${var.project_name}-client4-wordpress",
+    "/ecs/${var.project_name}-client5-wordpress"
   ]
 
   query_string = <<EOF
@@ -1176,7 +1176,7 @@ resource "aws_cloudwatch_query_definition" "sre_nginx_5xx" {
     # "/ecs/${var.project_name}-client3",
     # "/ecs/${var.project_name}-client4",
     # "/ecs/${var.project_name}-client5"
-    for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}"
+    for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}-wordpress"
   ]
 
   query_string = <<EOF
@@ -1193,7 +1193,7 @@ resource "aws_cloudwatch_query_definition" "sre_top_urls" {
     # "/ecs/${var.project_name}-client3",
     # "/ecs/${var.project_name}-client4",
     # "/ecs/${var.project_name}-client5"
-    for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}"
+    for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}-wordpress"
   ]
 
   query_string = <<EOF
@@ -1209,7 +1209,7 @@ resource "aws_cloudwatch_query_definition" "sre_error_trend" {
     # "/ecs/${var.project_name}-client3",
     # "/ecs/${var.project_name}-client4",
     # "/ecs/${var.project_name}-client5"
-    for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}"
+    for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}-wordpress"
   ]
 
   query_string = <<EOF
@@ -1223,7 +1223,7 @@ EOF
 
 resource "aws_cloudwatch_query_definition" "sre_security_brute_force" {
   name = "WordPress-SRE-01-SecurityBruteForce&BotAttacks"
-  log_group_names = [for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}"]
+  log_group_names = [for client in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${client}-wordpress"]
 
   query_string = <<EOF
 parse @message '* - - [*] "* * *" * *' as ip, time, method, uri, protocol, status, bytes
@@ -1237,7 +1237,7 @@ EOF
 
 resource "aws_cloudwatch_query_definition" "sre_finops_bandwidth" {
   name = "WordPress-SRE-2FinOpsHighestBandwidthConsumers(IPs)"
-  log_group_names = [for c in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${c}"]
+  log_group_names = [for c in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${c}-wordpress"]
 
   query_string = <<EOF
 parse @message '* - - [*] "* * *" * *' as ip, time, method, uri, protocol, status, bytes
@@ -1251,7 +1251,7 @@ EOF
 
 resource "aws_cloudwatch_query_definition" "sre_platform_crashes" {
   name = "WordPress-SRE-03AppGlobalPHPFatals&DBDrops"
-  log_group_names = [for c in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${c}"]
+  log_group_names = [for c in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${c}-wordpress"]
 
   query_string = <<EOF
 fields @timestamp, @logStream, @message
@@ -1264,7 +1264,7 @@ EOF
 
 resource "aws_cloudwatch_query_definition" "sre_incident_timeline" {
   name = "WordPress-SRE-04-Incident5xxErrorTimeline(5-MinBins)"
-  log_group_names = [for c in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${c}"]
+  log_group_names = [for c in keys(var.tg_arn_suffix) : "/ecs/${var.project_name}-${c}-wordpress"]
 
   query_string = <<EOF
 parse @message '* - - [*] "* * *" * *' as ip, time, method, uri, protocol, status, bytes

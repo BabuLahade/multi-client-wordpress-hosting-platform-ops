@@ -4,7 +4,7 @@ resource "random_password" "db_password" {
 }
 ## creating secret vault 
 resource "aws_secretsmanager_secret" "db_secret" {
-    name = "${var.project_name}-db-password"
+    name = "${var.project_name}-db-password-v2"
     recovery_window_in_days = 0
 
 

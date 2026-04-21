@@ -75,8 +75,8 @@ resource "null_resource" "install_python_dependencies" {
 data "archive_file" "auto_heal_zip" {
   depends_on  = [null_resource.install_python_dependencies]
   type        = "zip"
-  source_dir  = "${path.module}/lambda_auto_heal"
-  output_path = "${path.module}/lambda_auto_heal.zip"
+  source_file  = "${path.module}/auto_heal.py"
+  output_path = "${path.module}/auto_heal.zip"
 }
 
 resource "aws_lambda_function" "auto_heal_lambda" {
