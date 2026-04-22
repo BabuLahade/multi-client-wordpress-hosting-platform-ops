@@ -694,8 +694,8 @@ resource "aws_ecs_service" "clients" {
 resource "aws_appautoscaling_target" "ecs" {
   for_each = toset(var.ecs_clients)
 
-  max_capacity = 3
-  min_capacity = 1
+  max_capacity = 5
+  min_capacity = 2
 
   resource_id = "service/${aws_ecs_cluster.clients.name}/${aws_ecs_service.clients[each.key].name}"
   scalable_dimension = "ecs:service:DesiredCount"
