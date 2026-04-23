@@ -105,13 +105,13 @@ resource "aws_lambda_permission" "allow_eventbridge" {
 #   }
 # }
 
-# resource "aws_lambda_permission" "allow_eventbridge_lamda" {
-#   statement_id  = "AllowExecutionFromEventBridge"
-#   action        = "lambda:InvokeFunction"
-#   function_name = aws_lambda_function.auto_heal_lambda.function_name
-#   principal     = "events.amazonaws.com"
-#   source_arn    = var.cloudwatch_auto_heal_arn
-# }
+resource "aws_lambda_permission" "allow_eventbridge_lamda" {
+  statement_id  = "AllowExecutionFromEventBridge"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.auto_heal_lambda.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = var.cloudwatch_auto_heal_arn
+}
 
 # 1. Download the dependencies INTO the new src folder
 resource "null_resource" "install_python_dependencies" {

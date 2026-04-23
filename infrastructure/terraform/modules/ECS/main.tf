@@ -688,6 +688,9 @@ resource "aws_ecs_service" "clients" {
       var.alb_5xx_alarm[each.key]
     ]
   }
+  lifecycle {
+    ignore_changes = [desired_count]
+  }
 }
 
 ## autoscaling target
