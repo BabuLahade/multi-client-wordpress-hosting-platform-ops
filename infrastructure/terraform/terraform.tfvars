@@ -61,7 +61,7 @@ db_username = "admin"
 # db_password = "StrongPassword123!"
 db_name = "wordpress"
 ec2_clients =["client1","client2"]
-ecs_clients = ["client3","client4","client5"]
+ecs_clients = ["client3","client4","client5","client6"]
 domain_name = "babu-lahade.online"
 
 
