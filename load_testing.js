@@ -11,7 +11,7 @@ export const options = {
 
 export default function () {
   // REPLACE WITH YOUR RAW ALB DNS NAME
-  const albUrl = 'http://wordpress-hosting-alb-325099924.eu-north-1.elb.amazonaws.com' ;
+  const albUrl = 'http://wordpress-hosting-alb-725338346.eu-north-1.elb.amazonaws.com' ;
 
   // We use a random number to route 90% of traffic to Client 1, and 10% to Client 2
   const rand = Math.random();

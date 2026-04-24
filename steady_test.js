@@ -13,13 +13,14 @@ export const options = {
 export default function () {
   // ⚠️ REQUIREMENT: Replace with your actual ALB URL from the AWS Console!
   // It should look something like: http://internal-wordpress-alb-12345.eu-north-1.elb.amazonaws.com
-  const albUrl = 'http://wordpress-hosting-alb-325099924.eu-north-1.elb.amazonaws.com';
+  const albUrl = 'http://wordpress-hosting-alb-725338346.eu-north-1.elb.amazonaws.com';
 
   // Array of your clients
   const clients = [
     'client3.babu-lahade.online',
     'client4.babu-lahade.online',
-    'client5.babu-lahade.online'
+    'client5.babu-lahade.online',
+    'client6.babu-lahade.online'
   ];
 
   // Randomly pick a client for every single request

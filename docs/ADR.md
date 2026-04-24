@@ -244,3 +244,28 @@ Shared RDS means a db.t3.micro CPU spike from one client's slow queries can affe
 ---
 
 *Babu Lahade · Multi-Client WordPress Hosting Platform · 2025–2026*
+
+ADR: Migrating S3 Offload Traffic from NAT Gateway to VPC Gateway Endpoint
+Status: Accepted
+Date: April 2026
+
+1. Context and Problem Statement
+To ensure our WordPress compute tier remains stateless, we utilize the WP Offload Media plugin to push all user uploads (images, videos, documents) directly to an AWS S3 bucket.
+
+Initially, because our ECS Fargate containers reside in private subnets, their API calls to S3 were routed out to the public internet via our NAT Gateway. During scale-testing, we identified a critical cost-scaling bottleneck: AWS charges data processing fees per gigabyte for all traffic crossing the NAT Gateway. As client media uploads and downloads scale, NAT Gateway costs would increase linearly, creating an unacceptable financial overhead for a multi-tenant platform.
+
+2. Decision
+We decided to provision an Amazon S3 VPC Gateway Endpoint and update our private route tables to direct all S3-bound traffic through this endpoint rather than the NAT Gateway.
+
+3. Consequences
+Positive:
+
+Cost Elimination: S3 Gateway Endpoints are provided by AWS at no additional charge. We completely eliminated NAT Gateway data processing fees for all media offloading.
+
+Security Posture: Media traffic no longer traverses the public internet. It remains entirely within the AWS internal network backbone, satisfying enterprise data compliance requirements.
+
+Latency Reduction: Direct routing to the S3 service removes the NAT Gateway as a network hop, marginally improving media upload speeds for the PHP workers.
+
+Negative:
+
+Routing Complexity: Requires explicit Terraform state management to ensure all current and future private subnet route tables are properly associated with the Gateway Endpoint prefix list.
