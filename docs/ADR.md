@@ -269,3 +269,173 @@ Latency Reduction: Direct routing to the S3 service removes the NAT Gateway as a
 Negative:
 
 Routing Complexity: Requires explicit Terraform state management to ensure all current and future private subnet route tables are properly associated with the Gateway Endpoint prefix list.
+
+
+
+
+##############################################################
+                   CLAUDE 
+##############################################################
+
+ADR-008-slo-at-alb-not-target-group
+
+# ADR-008 — SLO Measurement Must Be at ALB Level, Not Target Group Level
+
+**Date:** April 2026 | **Status:** Accepted | **Triggered by:** INC-003
+
+## Context
+The original SLO Lambda used `HTTPCode_Target_5XX_Count` at the TargetGroup dimension. During Phase 1 load testing, ECS tasks crashed → deregistered from target group → target group emitted NO DATA → Lambda calculated 100% availability while the site was completely down for 4 minutes.
+
+`HTTPCode_ELB_5XX_Count` at LoadBalancer dimension captures ALL user-facing errors including "no healthy targets" 502/504 errors. It reports even when zero targets are registered.
+
+## Decision
+**SLO Lambda must use `HTTPCode_ELB_5XX_Count` at `LoadBalancer` dimension.**
+
+```python
+# WRONG — target-group level stops reporting when tasks deregister
+MetricName='HTTPCode_Target_5XX_Count', Dimensions=[{'Name':'TargetGroup','Value':tg_arn}]
+
+# CORRECT — ALB level always reports what users actually experienced
+MetricName='HTTPCode_ELB_5XX_Count', Dimensions=[{'Name':'LoadBalancer','Value':alb_suffix}]
+```
+
+Three complementary CRITICAL alarms added with `treat_missing_data=breaching`:
+- `RunningTaskCount = 0` (ECS layer — fires first)
+- `HealthyHostCount < 1` (ALB layer)
+- `HTTPCode_ELB_5XX_Count > 3` (user impact confirmation)
+
+## Lesson
+`treat_missing_data=missing` (CloudWatch default) means "no data = OK." For health metrics, no data means the healthy thing is gone — that is ALARM, not OK.
+
+#######################
+# ADR-009 — nginx worker_connections Must Be Set to 4096
+
+**Date:** April 2026 | **Status:** Accepted — implementation pending (v2.0) | **Triggered by:** INC-005
+
+## Context
+Phase 2 load test at 1,100 VUs on clienta: 78.42% failure rate, ECS CPU at 45%, auto-scaler never triggered. CloudWatch Logs revealed: `[alert] 1024 worker_connections are not enough`.
+
+Nginx default `worker_connections=1024`. Connections over 1,024 were dropped before reaching PHP. Because PHP was never invoked, CPU stayed low. Because CPU stayed low, ECS auto-scaling never triggered. The bottleneck was invisible to CPU-based monitoring.
+
+## Decision
+**nginx.conf must explicitly set `worker_connections 4096` in next Docker image build.**
+
+```nginx
+events {
+    worker_connections 4096;  # was 1024 — 4x capacity
+    use epoll;
+    multi_accept on;
+}
+```
+
+Additionally, CloudFront + WAF in front of ALB in v2.0 to absorb edge traffic before it hits containers.
+
+## What Phase 2 Proved
+Despite clienta's failure, **tenant isolation held completely** — clientb maintained 100% success rate during the entire 1,100 VU assault. This was the primary validation goal. It passed.
+
+## Lesson
+Auto-scaling cannot protect against limits below the metric it watches. Every stack layer has a capacity ceiling. Each ceiling must be explicitly known, monitored, and either raised or protected by a layer in front.
+
+##################################
+
+# ADR-010 — S3 VPC Gateway Endpoint for Media Offload Traffic
+
+**Date:** April 2026 | **Status:** Accepted | **Triggered by:** INC-002 (EFS exhaustion fix)
+
+## Context
+After INC-002, S3 Offload Media was implemented. This raises the question: should S3 traffic route through NAT Gateway (internet-facing) or S3 VPC endpoint (AWS private network)?
+
+| Option | Cost | Latency | Security |
+|--------|------|---------|----------|
+| NAT Gateway | $0.045/GB data processing | Higher | Traffic traverses internet |
+| S3 VPC Gateway Endpoint | $0 (free) | Lower | Never leaves AWS network |
+
+## Decision
+**S3 VPC Gateway Endpoint implemented. It is free and strictly better than NAT Gateway for S3 traffic.**
+
+```hcl
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.ap-south-1.s3"
+  vpc_endpoint_type = "Gateway"
+  route_table_ids   = [aws_route_table.private_a.id, aws_route_table.private_b.id]
+}
+```
+
+Bucket policy updated to restrict access to VPC endpoint only — S3 bucket is not accessible from the internet even accidentally.
+
+## Consequences
+- S3 media I/O stays within AWS network
+- NAT Gateway data processing charges eliminated for S3 traffic (~$2-5/month saving)
+- Lower latency for media uploads and reads
+- Additional security — bucket only accessible from within VPC
+
+
+###########################################################################
+
+# ADR-011 — No New Relic, No ELK, No X-Ray for WordPress Monolith
+
+**Date:** April 2026 | **Status:** Accepted — explicit decision not to add these tools
+
+## Context
+Three observability tools were evaluated: AWS X-Ray, New Relic APM, and ELK Stack. This ADR documents why each was explicitly rejected.
+
+## Decision
+
+### AWS X-Ray — Rejected
+X-Ray traces requests across multiple services in a distributed system. WordPress is a monolithic PHP application — one process handles the entire request. There are no separate services to trace across. Adding X-Ray adds instrumentation cost with zero observability benefit over CloudWatch Logs Insights.
+
+**Alternative:** Structured JSON logging with `request_id` correlation provides equivalent end-to-end tracing for a monolith.
+
+### New Relic — Rejected
+The platform already has Prometheus, Grafana, CloudWatch, and PagerDuty. New Relic would duplicate all of this at $25-100/month extra. A senior engineer interviewer will ask "why are you paying for New Relic when you have Prometheus and Grafana?" The correct answer is "I am not."
+
+**Keep:** PagerDuty (free developer account, real on-call integration, already integrated, genuine resume value).
+
+### ELK Stack — Rejected
+CloudWatch Logs Insights can query gigabytes of logs in seconds with 6 pre-saved queries covering all operational needs. ELK would cost $50-80/month extra and add operational overhead. The platform does not have log volume or query complexity that justifies ELK.
+
+## Summary
+
+| Tool | Cost | Adds | Decision |
+|------|------|------|----------|
+| X-Ray | $5-15/month | Nothing for monolith | ❌ Rejected |
+| New Relic | $25-100/month | Duplicates existing stack | ❌ Rejected |
+| ELK Stack | $50-80/month | Duplicates CloudWatch Logs | ❌ Rejected |
+| PagerDuty | $0 dev account | Real on-call integration | ✅ Kept |
+
+**Principle:** Add observability tools when they solve a problem you actually have, not because they appear on a job description.
+
+
+
+
+#############################
+# Architecture Decision Records — Index
+
+| ADR | Title | Status | Trigger |
+|-----|-------|--------|---------|
+| ADR-001 | Valkey over Redis — licence compliance | ✅ Accepted | Architecture design |
+| ADR-002 | ECS Fargate over EC2 — no instance management | ✅ Accepted | Architecture design |
+| ADR-003 | Custom Docker image with entrypoint.sh | ✅ Accepted | Architecture design |
+| ADR-004 | Per-client SLOs over platform-wide SLO | ✅ Accepted | Architecture design |
+| ADR-005 | treat_missing_data=breaching for health alarms | ✅ Accepted | Architecture design |
+| ADR-006 | minimumHealthyPercent=100 for zero-downtime deploy | ✅ Accepted | After INC-001 |
+| ADR-007 | Shared RDS with documented connection limit | ✅ Accepted | Architecture design |
+| [ADR-008](./ADR-008-slo-at-alb-not-target-group.md) | SLO at ALB level not target group | ✅ Accepted | After INC-003 |
+| [ADR-009](./ADR-009-nginx-worker-connections.md) | nginx worker_connections=4096 | ⏳ v2.0 planned | After INC-005 |
+| [ADR-010](./ADR-010-s3-vpc-endpoint.md) | S3 VPC Gateway Endpoint for media | ✅ Accepted | After INC-002 |
+| [ADR-011](./ADR-011-no-newrelic-elk-xray.md) | No New Relic, No ELK, No X-Ray | ✅ Accepted | Architecture review |
+
+---
+
+## Key Decisions Summary
+
+**Valkey not Redis:** Redis changed BSD→SSPL licence March 2024. Valkey is Linux Foundation BSD fork — functionally identical, licence-compliant.
+
+**Per-client SLOs not platform SLO:** Platform SLO hides individual tenant outages. Client A can be completely down while platform shows 99.7%.
+
+**SLO at ALB level (ADR-008):** Target group stops emitting metrics when tasks deregister. ALB-level `HTTPCode_ELB_5XX_Count` always captures what users experienced — including "no healthy targets" 502/504.
+
+**treat_missing_data=breaching:** CloudWatch default (notBreaching) means no data=OK. For HealthyHostCount and RunningTaskCount — no data means the healthy thing is gone. That is ALARM.
+
+**No New Relic/ELK/X-Ray:** Each duplicates what Prometheus+Grafana+CloudWatch already provides, at significant extra cost, for a WordPress monolith at this scale.
