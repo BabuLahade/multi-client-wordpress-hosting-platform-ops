@@ -429,3 +429,265 @@ Added:
 - Dual-layer monitoring (ELB + Target)
 
 ### client level slo will not affect but its actullyaffecting by downtime its like blind spot or hole in or slo and error rate  
+
+###########################################
+CLAUDE 
+###########################################
+
+# FAILURES.md — Production Incident Log
+
+> Real failures discovered during development, load testing, and chaos engineering.
+> A project without a FAILURES.md was never tested or hid its failures.
+
+| # | Title | Severity | Status |
+|---|-------|----------|--------|
+| INC-001 | ECS deployment caused 8-minute complete outage | CRITICAL | ✅ Fixed |
+| INC-002 | EFS burst credit exhaustion — pages degraded to 8-10s | HIGH | ✅ Fixed |
+| INC-003 | SLO Lambda reported 100% uptime during 4-minute real outage | CRITICAL | ✅ Fixed |
+| INC-004 | Auto-healer caused cache stampede — DB connections 20→40 | HIGH | ✅ Fixed |
+| INC-005 | Nginx worker exhaustion — 1,100 VUs caused 78% failure rate | HIGH | ⏳ v2.0 planned |
+| INC-006 | ClickOps drift — Terraform state diverged from AWS reality | MEDIUM | ✅ Fixed |
+
+---
+
+## INC-001 — ECS Deployment Caused 8-Minute Complete Outage
+
+**Severity:** CRITICAL | **Clients affected:** All 3 simultaneously
+
+### What Happened
+During a routine Docker image deployment, all three client sites went offline for 8 minutes. Every user received 503 Service Unavailable.
+
+### Root Cause
+ECS default `minimumHealthyPercent = 0` allows ECS to stop ALL old tasks before new tasks are healthy. New tasks failed initial health checks (WordPress DB connection warmup takes 20-30 seconds). Zero tasks running → zero ALB healthy targets → 503 for 8 minutes.
+
+```
+T+00:00  terraform apply → new ECS task definition
+T+00:20  ECS stops ALL old tasks immediately (minimumHealthyPercent=0 default)
+T+00:21  New tasks starting — health check not yet passing
+T+00:21  ALB: zero healthy targets → returns 503 to all users
+T+08:00  New tasks pass health check → sites restored
+```
+
+### Fix
+```hcl
+resource "aws_ecs_service" "wordpress" {
+  deployment_minimum_healthy_percent = 100  # was 0 — start new before stopping old
+  deployment_maximum_percent         = 200  # allow double capacity during deploy
+  health_check_grace_period_seconds  = 60   # give WordPress time to start up
+}
+```
+
+### Lesson
+Never trust infrastructure defaults for production. `minimumHealthyPercent = 0` is catastrophic for always-on web hosting. Every ECS deployment parameter must be explicitly reviewed.
+
+---
+
+## INC-002 — EFS Burst Credit Exhaustion — Progressive Slowdown to 8-10s
+
+**Severity:** HIGH | **Duration:** 90-minute gradual degradation | **Clients affected:** All 3
+
+### What Happened
+During load testing, page load times climbed gradually from 600ms to 8-10 seconds over 90 minutes. ECS, RDS, and Valkey all appeared healthy in CloudWatch. Monitoring was completely blind to this failure.
+
+### Root Cause
+Amazon EFS uses a burst credit system. Credits allow 100MB/s throughput. Exhaustion drops throughput to 50KB/s baseline. WordPress makes 200-400 PHP file reads per page request. Under sustained load, burst credits depleted over 90 minutes causing 2000x slower I/O with no errors.
+
+```
+T+00:00  Load test begins — p99 600ms normal
+T+30:00  Credits depleting — p99 climbing to 1.2s
+T+60:00  Credits at 30% — p99 now 4s
+T+90:00  Credits at 2% — p99 now 8-10s
+         ECS: healthy ✓  RDS: healthy ✓  Valkey: healthy ✓
+         BurstCreditBalance: never monitored ← the blind spot
+```
+
+### Fix
+- CloudWatch WARNING alarm: `EFS BurstCreditBalance < 1,000,000`
+- S3 Offload Media implemented — media now goes to S3 via VPC endpoint, removing highest-throughput workload from EFS
+- S3 VPC endpoint added — traffic stays within AWS network, no NAT Gateway transit cost
+
+```
+Before: EFS handles themes + plugins + media (all I/O on one filesystem)
+After:  EFS handles themes + plugins only (read-heavy, burst-friendly)
+        S3 via VPC endpoint handles media (large files, no EFS impact)
+```
+
+### Lesson
+Performance degradation does not always produce errors. A system can pass all health checks while delivering terrible user experience. Hidden infrastructure limits require monitoring resource-specific capacity metrics, not just error rates.
+
+---
+
+## INC-003 — SLO Lambda Reported 100% Uptime During 4-Minute Real Outage
+
+**Severity:** CRITICAL | **Duration:** 4 minutes undetected | **Clients affected:** clienta
+
+### What Happened
+Phase 1 load test with 1 ECS task: k6 showed **16.6% failure rate** (1,168 failed requests) and 4 minutes of 5xx errors. The SLO Lambda simultaneously reported **100% availability** and **0% error budget consumed**.
+
+The platform was down. The SLO said it was perfect.
+
+### Root Cause
+SLO Lambda measured `HTTPCode_Target_5XX_Count` at TargetGroup dimension. When the ECS task crashed and deregistered, the target group had zero registered targets. Zero targets = CloudWatch receives NO DATA. Lambda treated "no data = no errors" → calculated 100% availability.
+
+Meanwhile the ALB was returning 502 "No healthy targets" — recorded in `HTTPCode_ELB_5XX_Count` (ALB-level metric) which the Lambda never checked.
+
+```
+Reality:
+  Users → ALB → "No healthy targets" → 502 → user
+                ↓ recorded in HTTPCode_ELB_5XX_Count  ← NEVER MONITORED
+                ↓ NOT in HTTPCode_Target_5XX_Count     ← WAS MONITORED
+
+Lambda calculation:
+  HTTPCode_Target_5XX_Count = 0 (no targets to generate errors)
+  availability = (requests - 0) / requests = 100%  ← WRONG
+```
+
+### Fix
+```python
+# BEFORE — WRONG
+MetricName = 'HTTPCode_Target_5XX_Count'
+Dimensions = [{'Name': 'TargetGroup', 'Value': tg_arn}]
+
+# AFTER — CORRECT
+MetricName = 'HTTPCode_ELB_5XX_Count'      # ALB level — always reports
+Dimensions = [{'Name': 'LoadBalancer', 'Value': alb_arn_suffix}]
+```
+
+Three new CRITICAL alarms added with `treat_missing_data = breaching`:
+- `RunningTaskCount = 0` per client ECS service (fires first — ECS layer)
+- `HealthyHostCount = 0` per client target group (ALB layer)
+- `HTTPCode_ELB_5XX_Count > 3` at ALB level (user impact confirmation)
+
+### Lesson
+Monitoring must be validated by deliberately causing the failure it is meant to detect. `treat_missing_data = missing` (CloudWatch default = OK) is wrong for health metrics. For HealthyHostCount and RunningTaskCount — no data means the healthy thing is gone. That is ALARM, not OK.
+
+---
+
+## INC-004 — Auto-Healer Caused Cache Stampede — DB Connections Spiked 20→40
+
+**Severity:** HIGH | **Duration:** 15 minutes | **Clients affected:** clienta
+
+### What Happened
+High response times during Phase 1 load test triggered the Tier 3 Auto-Healer Lambda. Lambda found no locked queries, executed fallback FLUSHALL on Valkey. All 200 concurrent users got simultaneous cache misses, forcing every PHP worker to hit RDS directly. DB connections spiked 20→40. More latency → Lambda re-triggered → flushed cache again. Loop repeated **8 times in 15 minutes**.
+
+```
+T+02:00  High latency → Lambda fires (attempt 1)
+T+02:05  Lambda: SHOW PROCESSLIST → no locked queries found
+T+02:06  Lambda: FLUSHALL (fallback action) ← THE MISTAKE
+T+02:07  200 users: cache miss → all hit RDS simultaneously
+T+02:08  DB connections: 20 → 40
+T+02:10  More latency → Lambda fires again (attempt 2)
+         ... loop × 8 total
+T+17:00  Lambda concurrency limit reached — loop breaks naturally
+```
+
+### Root Cause
+```python
+# ORIGINAL LOGIC — WRONG
+def heal():
+    killed = kill_locked_queries()
+    if not killed:
+        flush_valkey_cache()  # ran even when no locked queries existed — WRONG
+```
+
+Cache flush was unconditional — ran whenever latency was high and no locked queries were found. This is the wrong logic. High latency caused by load (not cache poisoning) triggered cache flush which caused more load in a feedback loop.
+
+### Fix
+```python
+# FIXED LOGIC
+def heal():
+    locked_queries = find_locked_queries()
+    if not locked_queries:
+        logger.info("No locked queries. Latency is load-based. No action taken.")
+        return  # ← do nothing when no confirmed diagnosis
+    killed = kill_locked_queries(locked_queries)
+    if killed > 0:
+        flush_affected_cache_keys(locked_queries)  # targeted flush, not FLUSHALL
+```
+
+Lambda reserved concurrency set to 1 per client — prevents parallel execution loops.
+
+### Lesson
+Automated remediation can cause more damage than the failure it responds to. Every healing action must be conditional on confirmed diagnosis. When uncertain about root cause, do nothing and alert a human. Automation must fail safe.
+
+---
+
+## INC-005 — Nginx Worker Exhaustion Under 1,100 Concurrent Users
+
+**Severity:** HIGH | **Phase:** Load Test Phase 2 (Noisy Neighbor) | **Status:** v2.0 fix planned
+
+### What Happened
+Phase 2: 1,100 concurrent VUs directed at clienta. clienta failed at **78.42%** (5,477 failed requests, avg 41s response). clientb maintained **100% success rate** throughout. ECS CPU for clienta stayed at 45% — auto-scaler never triggered.
+
+### k6 Test Data
+```
+Phase 2 — clienta (target of 1,100 VUs):
+  http_req_failed:   78.42% (5,477/6,983)
+  http_req_duration: avg=41s  p95=55s
+  errors:            504 Gateway Timeout, 499 Client Closed Request
+
+Phase 2 — clientb (bystander — 500 VUs):
+  http_req_failed:   0.00% (0/500)   ← complete isolation confirmed ✓
+  http_req_duration: avg=390ms  p99=680ms
+
+clienta ECS CPU: 45%  (NOT saturated — auto-scaler never triggered)
+```
+
+### Root Cause
+CloudWatch Logs Insights on nginx error logs revealed:
+```
+[alert] 20#20: 1024 worker_connections are not enough
+```
+
+Nginx default `worker_connections = 1024`. With 0.25 vCPU Fargate (1 worker process), the container accepted exactly 1,024 connections and **immediately dropped all remaining**. Dropped connections returned 504 before reaching PHP. Because PHP was never called, CPU stayed low. Because CPU stayed low, ECS auto-scaler never triggered.
+
+```
+1,100 users → Nginx
+               ↓ 1,024 connections accepted → PHP-FPM → normal
+               ↓ 76 connections dropped → 504 to user instantly
+               CPU: 45% (PHP never processed dropped connections)
+               Auto-scaler: watching CPU — never fired
+```
+
+### v2.0 Fix
+```nginx
+# nginx.conf — next Docker image build
+events {
+    worker_connections 4096;  # was 1024 — 4x capacity
+    use epoll;
+    multi_accept on;
+}
+```
+Plus: CloudFront + WAF in front of ALB to absorb edge traffic before hitting containers.
+
+### What Phase 2 Proved ✅
+**Tenant isolation held completely.** clientb was 100% unaffected during the 1,100 VU assault. Shared RDS peak connections: 38 (normal). VPC, security groups, and separate target groups fully contained the blast radius. One client dying does not affect others.
+
+### Lesson
+Auto-scaling cannot protect against limits that exist below the metric the auto-scaler is watching. Every layer has a capacity ceiling — Nginx connections, EFS burst credits, RDS connections. Each must be monitored explicitly.
+
+---
+
+## INC-006 — ClickOps Drift: Terraform State Diverged from AWS Reality
+
+**Severity:** MEDIUM | **Clients affected:** None (caught before production)
+
+### What Happened
+Manual AWS Console changes during development accumulated over several weeks. `terraform plan` showed 23 resources to be destroyed and recreated — including ECS services and the RDS instance. Running `terraform apply` would have caused a major production outage.
+
+### Root Cause
+Changes made outside Terraform create state drift. Terraform reconciles by reverting manual changes to match code — destroying and recreating resources that differ from the state file.
+
+### Fix
+1. Documented all manual changes before destruction
+2. `terraform destroy` on drifted resources
+3. All changes codified in Terraform
+4. `terraform apply` from clean state — **full rebuild: 11 minutes 43 seconds**
+
+Added `terraform plan` as mandatory CI check on all PRs — drift detected at PR stage before merging.
+
+### Lesson
+ClickOps is not just inconvenient — it is dangerous. When Terraform is the only source of truth, you can destroy everything and rebuild in 12 minutes. When the Console is also a source of truth, you cannot trust either.
+
+---
+*Last updated: April 2026 | Babu Lahade*
