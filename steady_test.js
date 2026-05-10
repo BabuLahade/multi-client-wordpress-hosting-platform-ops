@@ -12,14 +12,14 @@ export const options = {
 
 export default function () {
  
-  const albUrl = 'http://wordpress-hosting-alb-67884335.eu-north-1.elb.amazonaws.com';
+  const albUrl = 'http://wordpress-hosting-alb-1822615712.eu-north-1.elb.amazonaws.com';
 
   
   const clients = [
     'client3.babu-lahade.online',
     'client4.babu-lahade.online',
-    'client5.babu-lahade.online',
-    'client6.babu-lahade.online'
+    'client5.babu-lahade.online'
+    
   ];
 
   // Randomly pick a client for every single request
