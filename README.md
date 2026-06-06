@@ -769,8 +769,60 @@ The most technically interesting part was not the infrastructure — it was unde
 
 The second interesting problem was the Dockerfile. The official `wordpress:latest` image is designed for human-operated deployments — you click through the installer, activate plugins, configure settings. That works fine for one site. For a platform that provisions sites automatically, every manual step is a reliability risk. The custom entrypoint.sh pattern eliminates that class of risk entirely.
 
-The third was the SLO framework. Setting an alarm threshold is easy. Setting the right threshold — one that alerts before an SLO breach rather than after — requires understanding burn rates and error budget mathematics. Getting that right changed how I think about reliability measurement.
+The third was the SLO framework. Setting an alarm threshold is easy. Setting the right threshold — one that alerts before an SLO breach rather than after — requires understanding burn
+rates and error budget mathematics. Getting that right changed how I think about reliability measurement.
 
 ---
 
 *Babu Lahade · MCA Cloud Computing · SPPU 2026*
+
+
+# Multi-Client WordPress Hosting Platform
+
+**Production-grade multi-tenant WordPress hosting on AWS**  
+*The architecture used by WP Engine and Kinsta — built from scratch by a fresh graduate*
+
+[![AWS](https://img.shields.io/badge/AWS-ECS_Fargate-FF9900?style=flat-square&logo=amazonaws)](https://aws.amazon.com) [![Terraform](https://img.shields.io/badge/IaC-Terraform-7B42BC?style=flat-square&logo=terraform)](https://terraform.io) [![GitHub Actions](https://img.shields.io/badge/CI/CD-GitHub_Actions-2088FF?style=flat-square&logo=githubactions)](https://github.com/features/actions) [![Python](https://img.shields.io/badge/Python-97.2%25-3776AB?style=flat-square&logo=python)](https://python.org)
+
+**🌐 Live Platform:**  
+[client1.babu-lahade.online](https://client1.babu-lahade.online) · [client2.babu-lahade.online](https://client2.babu-lahade.online) · [client3.babu-lahade.online](https://client3.babu-lahade.online)
+
+---
+
+## What Problem Does This Solve?
+
+Traditional shared hosting (cPanel, Hostinger) puts all clients on one server.
+
+❌ **Problem:** Client A's traffic spike → Client B's site slows down  
+❌ **Problem:** Client A's database crashes → Client B is at risk  
+❌ **Problem:** No way to prove isolation is actually working
+
+✅ **This platform:** Each client is completely isolated — crashes, traffic spikes, and security issues cannot affect other clients.
+
+**Proof:** Tested with 500 concurrent users hitting Client 1 simultaneously. Zero measurable impact on Client 2 and Client 3. ✅
+
+---
+
+## Why This Project is Different
+
+Most "AWS" projects are tutorials. This is different because:
+
+1. **Every client gets separate resources:**
+   - Separate ECS container (compute isolation)
+   - Separate RDS database (data isolation)  
+   - Separate EFS storage (file isolation)
+   - Separate CloudWatch logs (log isolation)
+
+2. **I hit real failures and debugged them:**
+   - Port conflict between nginx and PHP-FPM
+   - ALB health checks killing containers during startup
+   - WordPress database connection issues
+   - Protocol mismatch between nginx and FastCGI
+   - EFS mounting from wrong availability zone
+
+3. **Added a new client = change 1 line in Terraform:**
+   ```hcl
+   # That's it. No console clicks. No manual setup.
+   clients = ["client1", "client2", "client3", "client4"]  # Add client4
+
+
