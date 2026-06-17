@@ -306,3 +306,114 @@ module "backup" {
   project_name = var.project_name
   efs_arn = module.efs.efs_arn
 }
+
+
+
+
+
+
+
+
+
+# #################################################### GitHub OIDC Provider
+
+# # Step 1: Get GitHub OIDC thumbprint
+# data "tls_certificate" "github" {
+#   url = "https://token.actions.githubusercontent.com/.well-known/openid-configuration"
+# }
+
+# # Step 2: Create OIDC Identity Provider in AWS IAM
+# resource "aws_iam_openid_connect_provider" "github" {
+#   url             = "https://token.actions.githubusercontent.com"
+#   client_id_list  = ["sts.amazonaws.com"]
+#   thumbprint_list = [data.tls_certificate.github.certificates[0].sha1_fingerprint]
+# }
+
+# # Step 3: IAM Role that GitHub Actions will assume
+# resource "aws_iam_role" "github_actions_deploy" {
+#   name = "github-actions-wordpress-deploy"
+
+#   assume_role_policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Effect = "Allow"
+#         Principal = {
+#           Federated = aws_iam_openid_connect_provider.github.arn
+#         }
+#         Action = "sts:AssumeRoleWithWebIdentity"
+#         Condition = {
+#           StringEquals = {
+#             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
+#           }
+#           StringLike = {
+#             # IMPORTANT: replace with your exact GitHub username and repo name
+#             "token.actions.githubusercontent.com:sub" = "repo:BabuLahade/multi-client-wordpress-hosting-platform-ops:ref:refs/heads/main"
+#           }
+#         }
+#       }
+#     ]
+#   })
+# }
+
+# # Step 4: Policy — only what CI/CD needs
+# resource "aws_iam_role_policy" "github_actions_deploy" {
+#   name = "github-actions-deploy-policy"
+#   role = aws_iam_role.github_actions_deploy.id
+
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         # ECR — push images
+#         Effect = "Allow"
+#         Action = [
+#           "ecr:GetAuthorizationToken",
+#           "ecr:BatchCheckLayerAvailability",
+#           "ecr:GetDownloadUrlForLayer",
+#           "ecr:BatchGetImage",
+#           "ecr:PutImage",
+#           "ecr:InitiateLayerUpload",
+#           "ecr:UploadLayerPart",
+#           "ecr:CompleteLayerUpload"
+#         ]
+#         Resource = "*"
+#       },
+#       {
+#         # ECS — update services and register task definitions
+#         Effect = "Allow"
+#         Action = [
+#           "ecs:RegisterTaskDefinition",
+#           "ecs:UpdateService",
+#           "ecs:DescribeServices",
+#           "ecs:DescribeTaskDefinition",
+#           "ecs:DescribeTasks",
+#           "ecs:ListTasks",
+#           "ecs:DeregisterTaskDefinition"
+#         ]
+#         Resource = "*"
+#       },
+#       {
+#         # IAM PassRole — needed to pass task execution role to ECS
+#         Effect = "Allow"
+#         Action = ["iam:PassRole"]
+#         Resource = [
+#           aws_iam_role.ecs_task_execution_role.arn,
+#           aws_iam_role.ecs_task_role.arn
+#         ]
+#       },
+#       {
+#         # CloudWatch — for deployment notifications
+#         Effect = "Allow"
+#         Action = [
+#           "cloudwatch:PutMetricData",
+#           "logs:DescribeLogGroups"
+#         ]
+#         Resource = "*"
+#       }
+#     ]
+#   })
+# }
+
+
+

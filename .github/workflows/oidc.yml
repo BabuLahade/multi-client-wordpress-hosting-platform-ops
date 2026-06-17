@@ -1,0 +1,164 @@
+name: Build and Deploy WordPress Platform
+
+on:
+  push:
+    branches: [main]
+
+# REQUIRED — grants GitHub Actions permission to request OIDC token
+permissions:
+  id-token: write   # ← this is what allows OIDC
+  contents: read
+
+env:
+  AWS_REGION: eu-north-1
+  ECR_REGISTRY: 123456789012.dkr.ecr.eu-north-1.amazonaws.com
+  ECR_REPOSITORY: wordpress-platform
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── OIDC AUTH ──────────────────────────────────────────────
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/github-actions-wordpress-deploy
+          role-session-name: GitHubActions-WordPress-Deploy
+          aws-region: ${{ env.AWS_REGION }}
+        # NO aws-access-key-id or aws-secret-access-key here
+        # Temporary credentials injected automatically
+
+      # ── VERIFY (optional — remove after first successful run) ──
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+        # Should show: role/github-actions-wordpress-deploy
+
+      # ── BUILD ──────────────────────────────────────────────────
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }} \
+                       -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+                       ./docker/
+
+      # ── TRIVY SCAN ─────────────────────────────────────────────
+      - name: Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          format: table
+          severity: CRITICAL
+          exit-code: 1
+          ignore-unfixed: true
+        # Pipeline halts here if CRITICAL CVE found
+
+      # ── ECR PUSH ───────────────────────────────────────────────
+      - name: Push image to ECR
+        run: |
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      # ── CANARY DEPLOY — client3 first ──────────────────────────
+      - name: Render task definition for client3
+        id: render-client3
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definitions/client3.json
+          container-name: wordpress-fpm
+          image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy canary — client3
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-client3.outputs.task-definition }}
+          service: wordpress-client3
+          cluster: wordpress-platform-cluster
+          wait-for-service-stability: true
+
+      # ── HTTP VERIFY ────────────────────────────────────────────
+      - name: Verify canary health — HTTP 200 check
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -L https://client3.babu-lahade.online/health)
+          echo "HTTP Status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Canary health check FAILED — status $STATUS. Pipeline halting."
+            exit 1
+          fi
+          echo "Canary healthy. Proceeding to global rollout."
+
+      # ── GLOBAL ROLLOUT — client1, client2, client4, client5 ────
+      - name: Render task definition for client1
+        id: render-client1
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definitions/client1.json
+          container-name: wordpress-fpm
+          image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy client1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-client1.outputs.task-definition }}
+          service: wordpress-client1
+          cluster: wordpress-platform-cluster
+          wait-for-service-stability: true
+
+      - name: Render and deploy client2
+        id: render-client2
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definitions/client2.json
+          container-name: wordpress-fpm
+          image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy client2
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-client2.outputs.task-definition }}
+          service: wordpress-client2
+          cluster: wordpress-platform-cluster
+          wait-for-service-stability: true
+
+      - name: Render and deploy client4
+        id: render-client4
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definitions/client4.json
+          container-name: wordpress-fpm
+          image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy client4
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-client4.outputs.task-definition }}
+          service: wordpress-client4
+          cluster: wordpress-platform-cluster
+          wait-for-service-stability: true
+
+      - name: Render and deploy client5
+        id: render-client5
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definitions/client5.json
+          container-name: wordpress-fpm
+          image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy client5
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-client5.outputs.task-definition }}
+          service: wordpress-client5
+          cluster: wordpress-platform-cluster
+          wait-for-service-stability: true
+
+      - name: Deployment complete
+        run: |
+          echo "All clients deployed successfully."
+          echo "Image: $ECR_REGISTRY/$ECR_REPOSITORY:${{ github.sha }}"

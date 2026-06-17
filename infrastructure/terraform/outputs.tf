@@ -116,3 +116,8 @@ output "nameservers" {
 #   description = "Copy this into Grafana CloudWatch config"
 #   sensitive   = true 
 # }
+
+
+# output "github_actions_role_arn" {
+#   value = aws_iam_role.github_actions_deploy.arn
+# }

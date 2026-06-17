@@ -12,7 +12,7 @@ export const options = {
 
 export default function () {
  
-  const albUrl = 'http://wordpress-hosting-alb-1973271102.eu-north-1.elb.amazonaws.com';
+  const albUrl = 'http://wordpress-hosting-alb-1539546879.eu-north-1.elb.amazonaws.com';
 
   
   const clients = [
