@@ -92,4 +92,4 @@ sudo docker build -t wordpress-custom .
 sudo docker tag wordpress-custom:latest 882083662991.dkr.ecr.eu-north-1.amazonaws.com/wordpress-hosting-ecr-repo:latest
 
 # 4. Push to ECR
-sudo docker push sudo docker build -t wordpress-custom ..dkr.ecr.eu-north-1.amazonaws.com/wordpress-hosting-ecr-repo:latest
+sudo docker push.dkr.ecr.eu-north-1.amazonaws.com/wordpress-hosting-ecr-repo:latest

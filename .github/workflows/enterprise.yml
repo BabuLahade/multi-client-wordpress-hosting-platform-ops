@@ -11,9 +11,9 @@ env:
   ECS_CLUSTER: wordpress-hosting-cluster
 
 jobs: 
-  # ==========================================
+  
   # JOB 1: THE SECURE BUILD
-  # ==========================================
+  
   ci-build-scan-push:
     name: Build, Sec-Scan, and Push
     runs-on: ubuntu-latest
@@ -55,9 +55,9 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
         run: docker push -a $ECR_REGISTRY/$ECR_REPOSITORY
 
-  # ==========================================
+  
   # JOB 2: THE CANARY DEPLOYMENT (REQUIRES APPROVAL)
-  # ==========================================
+  
   cd-matrix-canary:
     name: Matrix Canary Rollout
     runs-on: ubuntu-latest
